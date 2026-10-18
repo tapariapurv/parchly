@@ -1,0 +1,1 @@
+Inkdown 1.0: a calm, native Markdown editor with Document and Source modes, smart lists and tables, a live preview and a Finder Quick Look extension.

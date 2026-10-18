@@ -1,0 +1,1 @@
+md,notes,writer,writing,preview,gfm,table,todo,checklist,journal,readme,github,outline,wysiwyg,docs

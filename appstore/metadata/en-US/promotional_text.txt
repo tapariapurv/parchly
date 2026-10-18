@@ -1,0 +1,1 @@
+Markdown that reads like a page and saves as plain text. Lists, tasks and tables that format themselves, plus a Quick Look preview right in Finder.
