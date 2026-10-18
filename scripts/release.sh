@@ -8,6 +8,10 @@ NOTES="release-notes/v$VERSION.md"
 cd "$(dirname "$0")/.."
 
 sed -i '' "s/MARKETING_VERSION: \".*\"/MARKETING_VERSION: \"$VERSION\"/" project.yml
+BUILD=$(( $(git rev-list --count HEAD) + 1 ))   # always increasing, as the App Store requires
+sed -i '' "s/CURRENT_PROJECT_VERSION: \".*\"/CURRENT_PROJECT_VERSION: \"$BUILD\"/" project.yml
+git commit -qm "Bump version to $VERSION ($BUILD)" project.yml || true
+git push -q origin HEAD:main
 xcodegen -q
 xcodebuild -project Inkdown.xcodeproj -scheme Inkdown -configuration Release \
   -derivedDataPath build/release -clonedSourcePackagesDirPath build/spm ARCHS="arm64 x86_64" ONLY_ACTIVE_ARCH=NO clean build -quiet

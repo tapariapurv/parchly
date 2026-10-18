@@ -10,7 +10,7 @@ packages:
 settings:
   base:
     SWIFT_VERSION: "5.0"
-    MARKETING_VERSION: "1.0.0"
+    MARKETING_VERSION: "1.0.1"
     CURRENT_PROJECT_VERSION: "1"
     DEVELOPMENT_TEAM: 7PM4P8RLL2
     CODE_SIGN_STYLE: Automatic
@@ -42,6 +42,8 @@ targets:
       path: App/Info.plist
       properties:
         CFBundleDisplayName: Inkdown
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         NSHumanReadableCopyright: © 2026 Purv Taparia. MIT License.
         ITSAppUsesNonExemptEncryption: false
         NSPrincipalClass: NSApplication
@@ -79,6 +81,8 @@ targets:
       path: QuickLook/Info.plist
       properties:
         CFBundleDisplayName: Inkdown Quick Look
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         NSExtension:
           NSExtensionPointIdentifier: com.apple.quicklook.preview
           NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).PreviewProvider
