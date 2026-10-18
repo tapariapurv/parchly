@@ -10,9 +10,17 @@ final class MarkdownTextView: NSTextView {
 
     override func setFrameSize(_ newSize: NSSize) {
         super.setFrameSize(newSize)
-        let column = styler.fontSize * 42
-        let inset = max(56, ((newSize.width - column) / 2).rounded())
-        if textContainerInset.width != inset { textContainerInset = NSSize(width: inset, height: 30) }
+        let column = styler.fontSize * (styler.wysiwyg ? 36 : 42)
+        let inset = max(64, ((newSize.width - column) / 2).rounded())
+        if textContainerInset.width != inset { textContainerInset = NSSize(width: inset, height: 56) }
+    }
+
+    override func drawBackground(in rect: NSRect) {
+        super.drawBackground(in: rect)
+        guard let lm = layoutManager as? MDLayoutManager, let tc = textContainer else { return }
+        let origin = textContainerOrigin
+        let glyphs = lm.glyphRange(forBoundingRect: rect.offsetBy(dx: -origin.x, dy: -origin.y).insetBy(dx: -1000, dy: 0), in: tc)
+        lm.drawMargins(glyphs, at: origin)
     }
 
     // MARK: Edit primitives
@@ -330,6 +338,7 @@ final class EditorController: NSViewController, NSTextViewDelegate, NSTextStorag
     weak var undoSource: NSDocument?
     var onChange: () -> Void = {}
     var onScroll: (CGFloat) -> Void = { _ in }
+    var onOutline: () -> Void = {}
     private var statusWork: DispatchWorkItem?
 
     override func loadView() {
@@ -356,7 +365,7 @@ final class EditorController: NSViewController, NSTextViewDelegate, NSTextStorag
         tv.isAutomaticTextReplacementEnabled = false
         tv.isAutomaticSpellingCorrectionEnabled = false
         tv.isAutomaticLinkDetectionEnabled = false
-        tv.isContinuousSpellCheckingEnabled = true
+        tv.isContinuousSpellCheckingEnabled = false
         tv.smartInsertDeleteEnabled = false
         tv.backgroundColor = .paper
         tv.insertionPointColor = .controlAccentColor
@@ -378,8 +387,15 @@ final class EditorController: NSViewController, NSTextViewDelegate, NSTextStorag
         status.textColor = .tertiaryLabelColor
         status.alignment = .right
 
+        // Floating outline button in the left margin, like Downright.
+        let outline = NSButton(image: NSImage(systemSymbolName: "line.3.horizontal", accessibilityDescription: "Outline")!, target: self, action: #selector(outlineClicked))
+        outline.isBordered = false
+        outline.contentTintColor = .secondaryLabelColor
+        outline.symbolConfiguration = .init(pointSize: 22, weight: .light)
+        outline.toolTip = "Files & Outline  ⇧⌘O"
+
         let root = NSView()
-        for v in [scrollView, status] as [NSView] { v.translatesAutoresizingMaskIntoConstraints = false; root.addSubview(v) }
+        for v in [scrollView, status, outline] as [NSView] { v.translatesAutoresizingMaskIntoConstraints = false; root.addSubview(v) }
         NSLayoutConstraint.activate([
             scrollView.topAnchor.constraint(equalTo: root.topAnchor),
             scrollView.bottomAnchor.constraint(equalTo: root.bottomAnchor),
@@ -387,6 +403,8 @@ final class EditorController: NSViewController, NSTextViewDelegate, NSTextStorag
             scrollView.trailingAnchor.constraint(equalTo: root.trailingAnchor),
             status.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -14),
             status.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -6),
+            outline.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 18),
+            outline.centerYAnchor.constraint(equalTo: root.centerYAnchor),
         ])
         root.frame = NSRect(x: 0, y: 0, width: 700, height: 600)
         view = root
@@ -470,6 +488,7 @@ final class EditorController: NSViewController, NSTextViewDelegate, NSTextStorag
     func setWysiwyg(_ on: Bool) {
         guard styler.wysiwyg != on || textView.string.isEmpty else { return }
         styler.wysiwyg = on
+        (textView.layoutManager as? MDLayoutManager)?.lineNumbers = !on
         styler.revealed = NSRange(location: NSNotFound, length: 0)
         textView.typingAttributes[.font] = styler.body
         styler.restyleAll(textView.textStorage!)
@@ -497,6 +516,8 @@ final class EditorController: NSViewController, NSTextViewDelegate, NSTextStorag
         let sel = textView.selectedRange().length
         status.stringValue = (sel > 0 ? "\(sel) selected · " : "") + "\(words) words · Ln \(line), Col \(cursor - lineStart + 1)"
     }
+
+    @objc private func outlineClicked() { onOutline() }
 
     @objc private func scrolled() {
         let clip = scrollView.contentView

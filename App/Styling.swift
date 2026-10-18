@@ -18,6 +18,7 @@ extension NSColor {
     static let rule = NSColor(name: nil) { $0.isDark ? NSColor(white: 1, alpha: 0.14) : NSColor(srgbRed: 0.3, green: 0.24, blue: 0.15, alpha: 0.16) }
     static let quoteBar = NSColor(name: nil) { $0.isDark ? NSColor(srgbRed: 0.6, green: 0.5, blue: 0.36, alpha: 0.7) : NSColor(srgbRed: 0.72, green: 0.6, blue: 0.43, alpha: 0.8) }
     static let syntax = NSColor.tertiaryLabelColor
+    static let titleBand = NSColor(name: nil) { $0.isDark ? NSColor(srgbRed: 0.15, green: 0.145, blue: 0.14, alpha: 1) : NSColor(srgbRed: 0.925, green: 0.918, blue: 0.902, alpha: 1) }
 }
 
 extension NSAppearance {
@@ -27,7 +28,7 @@ extension NSAppearance {
 /// Live Markdown styling of the source text.
 /// Document mode hides syntax (except inline markers on the caret's line); Source mode shows everything.
 final class Styler {
-    var fontSize: CGFloat = 17
+    var fontSize: CGFloat = 16
     var wysiwyg = true
     /// Whole lines holding the selection; their inline markers stay visible in Document mode.
     var revealed = NSRange(location: NSNotFound, length: 0)
@@ -37,9 +38,9 @@ final class Styler {
         let base = NSFont.systemFont(ofSize: size, weight: weight)
         return base.fontDescriptor.withDesign(.serif).flatMap { NSFont(descriptor: $0, size: size) } ?? base
     }
-    var body: NSFont { wysiwyg ? serif(fontSize) : .monospacedSystemFont(ofSize: fontSize * 0.88, weight: .regular) }
+    var body: NSFont { wysiwyg ? serif(fontSize) : .monospacedSystemFont(ofSize: fontSize * 0.9, weight: .regular) }
     private var mono: NSFont { .monospacedSystemFont(ofSize: fontSize * 0.84, weight: .regular) }
-    private var lineSpacing: CGFloat { fontSize * 0.5 }
+    private var lineSpacing: CGFloat { fontSize * (wysiwyg ? 0.62 : 0.6) }
 
     private static let headingRE = try! NSRegularExpression(pattern: #"^ {0,3}(#{1,6})(?:[ \t]+|$)"#)
     private static let quoteRE = try! NSRegularExpression(pattern: #"^ {0,3}>[ \t]?"#)
@@ -128,7 +129,32 @@ final class Styler {
             }
             i = max(j, i + 1)
         }
-        for (k, line) in lines.enumerated() { styleLine(s, ns, line.full, line.content, table: table[k]) }
+        // Document mode lays table cells on shared tab stops so columns align whatever the source spacing.
+        var stops = Array(repeating: [CGFloat](), count: lines.count)
+        if wysiwyg {
+            var k = 0
+            while k < lines.count {
+                guard table[k] == 1 else { k += 1; continue }
+                var end = k
+                while end < lines.count, table[end] > 0, end == k || table[end] != 1 { end += 1 }
+                var widths: [CGFloat] = []
+                for row in k..<end where table[row] != 2 {
+                    let font = table[row] == 1 ? serif(fontSize, .semibold) : body
+                    for (c, cell) in MD.cells(ns.substring(with: lines[row].content)).enumerated() {
+                        let w = (cell as NSString).size(withAttributes: [.font: font]).width
+                        if c < widths.count { widths[c] = max(widths[c], w) } else { widths.append(w) }
+                    }
+                }
+                let gap = fontSize * 0.75
+                var x = gap, columnStops = [x]
+                for w in widths { x += w + 2 * gap; columnStops.append(x) }
+                for row in k..<end { stops[row] = columnStops }
+                k = end
+            }
+        }
+        for (k, line) in lines.enumerated() { styleLine(s, ns, line.full, line.content, table: table[k], stops: stops[k]) }
+        // We run after NSTextStorage's own fixing pass, so do font fallback (e.g. ⌘ in New York) ourselves.
+        s.fixAttributes(in: NSRange(location: lines[0].full.location, length: lines[lines.count - 1].full.upperBound - lines[0].full.location))
     }
 
     private func paragraph(_ configure: (NSMutableParagraphStyle) -> Void = { _ in }) -> NSParagraphStyle {
@@ -140,7 +166,7 @@ final class Styler {
         return p
     }
 
-    private func styleLine(_ s: NSTextStorage, _ ns: NSString, _ full: NSRange, _ r: NSRange, table: Int) {
+    private func styleLine(_ s: NSTextStorage, _ ns: NSString, _ full: NSRange, _ r: NSRange, table: Int, stops: [CGFloat] = []) {
         s.setAttributes([.font: body, .foregroundColor: NSColor.ink, .paragraphStyle: paragraph()], range: full)
         let text = ns.substring(with: r)
         let doc = wysiwyg
@@ -148,6 +174,11 @@ final class Styler {
         let pad = fontSize * 0.9
         func hide(_ x: NSRange) { if doc { s.addAttribute(.mdHide, value: true, range: x) } else { s.addAttribute(.foregroundColor, value: NSColor.syntax, range: x) } }
 
+        if doc, !reveal, !inCode(r.location), text.trimmingCharacters(in: .whitespaces).isEmpty {
+            // Blank lines read as paragraph spacing, like a rendered page.
+            s.addAttributes([.font: NSFont.systemFont(ofSize: fontSize * 0.45), .paragraphStyle: paragraph { $0.lineSpacing = 0; $0.maximumLineHeight = self.fontSize * 0.55 }], range: full)
+            return
+        }
         if inCode(r.location) {
             s.addAttributes([.font: mono, .mdBlock: 1, .paragraphStyle: paragraph { $0.firstLineHeadIndent = pad; $0.headIndent = pad; $0.tailIndent = -pad; $0.lineSpacing = self.fontSize * 0.32 }], range: full)
             if MD.fenceRE.firstMatch(in: text, range: MD.full(text)) != nil { s.addAttribute(.foregroundColor, value: NSColor.syntax, range: r) }
@@ -157,8 +188,9 @@ final class Styler {
             let level = m.range(at: 1).length
             let scale: [CGFloat] = [1.9, 1.5, 1.25, 1.1, 1, 1]
             let size = fontSize * scale[level - 1]
-            let font = doc ? serif(size, .bold) : NSFont.monospacedSystemFont(ofSize: size * 0.88, weight: .bold)
-            s.addAttributes([.font: font, .mdHeading: level, .paragraphStyle: paragraph { $0.paragraphSpacingBefore = self.fontSize * (level <= 2 ? 0.9 : 0.5) }], range: full)
+            if doc {
+                s.addAttributes([.font: serif(size, .bold), .mdHeading: level, .paragraphStyle: paragraph { $0.paragraphSpacingBefore = self.fontSize * (level <= 2 ? 1.1 : 0.6) }], range: full)
+            }
             if level == 6 { s.addAttribute(.foregroundColor, value: NSColor.secondaryLabelColor, range: r) }
             hide(NSRange(location: r.location, length: m.range.length))
             inline(s, ns, NSRange(location: r.location + m.range.length, length: r.length - m.range.length), reveal: reveal)
@@ -169,30 +201,45 @@ final class Styler {
             return
         }
         if table > 0 {
-            let font = table == 1 ? NSFont.monospacedSystemFont(ofSize: fontSize * 0.84, weight: .semibold) : mono
-            s.addAttributes([.font: font, .mdTableRow: table], range: full)
-            if table == 2 {
-                if doc && !reveal {
-                    s.addAttributes([.font: NSFont.systemFont(ofSize: 1), .paragraphStyle: paragraph { $0.lineSpacing = 0; $0.maximumLineHeight = 2 }], range: full)
-                    s.addAttribute(.mdHide, value: true, range: r)   // keep the newline, or the next row merges in
-                } else {
-                    s.addAttribute(.foregroundColor, value: NSColor.syntax, range: r)
-                }
+            s.addAttribute(.mdTableRow, value: table, range: full)
+            if !doc {
+                s.addAttribute(.font, value: table == 1 ? NSFont.monospacedSystemFont(ofSize: fontSize * 0.9, weight: .semibold) : body, range: full)
+                if table == 2 { s.addAttribute(.foregroundColor, value: NSColor.syntax, range: r); return }
+                inline(s, ns, r, reveal: true)
+                for (i, ch) in text.utf16.enumerated() where ch == 124 { s.addAttribute(.foregroundColor, value: NSColor.syntax, range: NSRange(location: r.location + i, length: 1)) }
                 return
             }
+            if table == 2, !reveal {
+                s.addAttributes([.font: NSFont.systemFont(ofSize: 1), .paragraphStyle: paragraph { $0.lineSpacing = 0; $0.maximumLineHeight = 2 }], range: full)
+                s.addAttribute(.mdHide, value: true, range: r)   // keep the newline, or the next row merges in
+                return
+            }
+            s.addAttributes([.font: table == 1 ? serif(fontSize, .semibold) : body, .paragraphStyle: paragraph {
+                $0.tabStops = stops.map { NSTextTab(textAlignment: .left, location: $0) }
+                $0.lineSpacing = self.fontSize * 0.45
+                $0.paragraphSpacingBefore = self.fontSize * 0.2
+            }], range: full)
+            if table == 2 { s.addAttribute(.foregroundColor, value: NSColor.syntax, range: r) }
             inline(s, ns, r, reveal: reveal)
-            var at = 0
-            for ch in text.utf16 {
-                if ch == 124 {
-                    let pipe = NSRange(location: r.location + at, length: 1)
-                    s.addAttributes(doc ? [.mdPipe: true, .foregroundColor: NSColor.clear] : [.foregroundColor: NSColor.syntax], range: pipe)
+            // Unescaped pipes become tabs; the padding around them collapses.
+            let u = Array(text.utf16)
+            var i = 0
+            while i < u.count {
+                if u[i] == 92 { i += 2; continue }
+                if u[i] == 124 {
+                    s.addAttribute(.mdPipe, value: true, range: NSRange(location: r.location + i, length: 1))
+                    var a = i - 1
+                    while a >= 0, u[a] == 32 || u[a] == 9 { s.addAttribute(.mdHide, value: true, range: NSRange(location: r.location + a, length: 1)); a -= 1 }
+                    var b = i + 1
+                    while b < u.count, u[b] == 32 || u[b] == 9 { s.addAttribute(.mdHide, value: true, range: NSRange(location: r.location + b, length: 1)); b += 1 }
+                    i = b; continue
                 }
-                at += 1
+                i += 1
             }
             return
         }
         if let m = Self.quoteRE.firstMatch(in: text, range: MD.full(text)) {
-            s.addAttributes([.mdBlock: 2, .foregroundColor: NSColor.secondaryLabelColor, .paragraphStyle: paragraph { $0.firstLineHeadIndent = pad; $0.headIndent = pad }], range: full)
+            s.addAttributes([.mdBlock: 2, .paragraphStyle: paragraph { $0.firstLineHeadIndent = pad; $0.headIndent = pad }], range: full)
             hide(NSRange(location: r.location, length: m.range.length))
             inline(s, ns, NSRange(location: r.location + m.range.length, length: r.length - m.range.length), reveal: reveal)
             return
@@ -208,7 +255,8 @@ final class Styler {
                 let box = NSRange(location: r.location + boxAt, length: 3)
                 if doc {
                     hide(NSRange(location: markerRange.location, length: box.location - markerRange.location))
-                    s.addAttributes([.mdCheckbox: p.task!, .foregroundColor: NSColor.clear], range: box)
+                    s.addAttributes([.mdCheckbox: p.task!, .foregroundColor: NSColor.clear, .kern: fontSize * 0.55], range: box)
+                    s.addAttribute(.mdHide, value: true, range: NSRange(location: box.location + 1, length: 1))
                     visible = p.indent + "[ ] "
                 } else {
                     s.addAttribute(.foregroundColor, value: NSColor.controlAccentColor, range: prefix)
@@ -281,6 +329,10 @@ final class Styler {
 final class MDLayoutManager: NSLayoutManager, NSLayoutManagerDelegate {
     /// Line holding the caret; a heading there gets an "H1" badge in the margin (Document mode).
     var caretLine: NSRange?
+    /// Source mode draws line numbers just left of the text column.
+    var lineNumbers = false
+
+    private func fontSize(at i: Int) -> CGFloat { (textStorage?.attribute(.font, at: i, effectiveRange: nil) as? NSFont)?.pointSize ?? 16 }
 
     override init() { super.init(); delegate = self }
     required init?(coder: NSCoder) { fatalError() }
@@ -293,7 +345,7 @@ final class MDLayoutManager: NSLayoutManager, NSLayoutManagerDelegate {
         for i in 0..<range.length {
             let c = characterIndexes[i]
             guard c < s.length else { continue }
-            if s.attribute(.mdHide, at: c, effectiveRange: nil) != nil {
+            if s.attribute(.mdHide, at: c, effectiveRange: nil) != nil || s.attribute(.mdPipe, at: c, effectiveRange: nil) != nil {
                 if newProps == nil { newProps = Array(UnsafeBufferPointer(start: props, count: range.length)) }
                 newProps![i] = .controlCharacter
             } else if let depth = s.attribute(.mdBullet, at: c, effectiveRange: nil) as? Int {
@@ -312,7 +364,23 @@ final class MDLayoutManager: NSLayoutManager, NSLayoutManagerDelegate {
 
     /// Hidden syntax is laid out as zero-width control glyphs (null glyphs would detach from their line).
     func layoutManager(_ lm: NSLayoutManager, shouldUse action: NSLayoutManager.ControlCharacterAction, forControlCharacterAt charIndex: Int) -> NSLayoutManager.ControlCharacterAction {
-        textStorage?.attribute(.mdHide, at: charIndex, effectiveRange: nil) != nil ? .zeroAdvancement : action
+        if textStorage?.attribute(.mdPipe, at: charIndex, effectiveRange: nil) != nil { return .horizontalTab }
+        return textStorage?.attribute(.mdHide, at: charIndex, effectiveRange: nil) != nil ? .zeroAdvancement : action
+    }
+
+    // ponytail: counts newlines from the top on each draw; cache line starts if huge files feel slow.
+    private func drawLineNumbers(_ glyphs: NSRange, _ origin: NSPoint) {
+        guard let s = textStorage else { return }
+        let ns = s.string as NSString
+        let attrs: [NSAttributedString.Key: Any] = [.font: NSFont.monospacedDigitSystemFont(ofSize: 10, weight: .regular), .foregroundColor: NSColor.tertiaryLabelColor]
+        var counted = 0, line = 1
+        enumerateLineFragments(forGlyphRange: glyphs) { _, used, _, g, _ in
+            let c = self.characterRange(forGlyphRange: g, actualGlyphRange: nil).location
+            while counted < c { if ns.character(at: counted) == 10 { line += 1 }; counted += 1 }
+            let label = (c == 0 || ns.character(at: c - 1) == 10 ? "\(line)" : "↳") as NSString
+            let size = label.size(withAttributes: attrs)
+            label.draw(at: NSPoint(x: origin.x - size.width - 14, y: origin.y + used.minY + 2), withAttributes: attrs)
+        }
     }
 
     private func rect(_ chars: NSRange, _ origin: NSPoint) -> NSRect {
@@ -357,10 +425,9 @@ final class MDLayoutManager: NSLayoutManager, NSLayoutManagerDelegate {
                 enumerateLineFragments(forGlyphRange: glyphRange(forCharacterRange: eff, actualCharacterRange: nil)) { frag, _, _, glyphs, _ in
                     let lineChars = self.characterRange(forGlyphRange: glyphs, actualGlyphRange: nil)
                     guard let row = s.attribute(.mdTableRow, at: lineChars.location, effectiveRange: nil) as? Int else { return }
-                    var xs: [CGFloat] = []
-                    for c in lineChars.location..<lineChars.upperBound where s.attribute(.mdPipe, at: c, effectiveRange: nil) != nil {
-                        xs.append(self.boundingRect(forGlyphRange: self.glyphRange(forCharacterRange: NSRange(location: c, length: 1), actualCharacterRange: nil), in: tc).midX + origin.x)
-                    }
+                    let stops = (s.attribute(.paragraphStyle, at: lineChars.location, effectiveRange: nil) as? NSParagraphStyle)?.tabStops ?? []
+                    guard let gap = stops.first?.location else { return }
+                    let xs = stops.map { (origin.x + tc.lineFragmentPadding + $0.location - gap).rounded() }
                     guard let minX = xs.first, let maxX = xs.last, xs.count >= 2 else { return }
                     let f = frag.offsetBy(dx: origin.x, dy: origin.y)
                     if row == 1 {
@@ -370,7 +437,7 @@ final class MDLayoutManager: NSLayoutManager, NSLayoutManagerDelegate {
                     NSColor.rule.setFill()
                     for x in xs { NSRect(x: x.rounded(), y: f.minY, width: 1, height: f.height).fill() }
                     if row == 1 { NSRect(x: minX, y: f.minY, width: maxX - minX + 1, height: 1).fill() }
-                    if row != 2 { NSRect(x: minX, y: f.maxY - 1, width: maxX - minX + 1, height: 1).fill() }
+                    NSRect(x: minX, y: f.maxY - 1, width: maxX - minX + 1, height: 1).fill()
                 }
             }
             i = max(eff.upperBound, i + 1)
@@ -383,24 +450,35 @@ final class MDLayoutManager: NSLayoutManager, NSLayoutManagerDelegate {
             if let checked = s.attribute(.mdCheckbox, at: i, longestEffectiveRange: &eff, in: NSRange(location: i, length: end - i)) as? Bool {
                 let g = boundingRect(forGlyphRange: glyphRange(forCharacterRange: eff, actualCharacterRange: nil), in: tc).offsetBy(dx: origin.x, dy: origin.y)
                 let lead = (s.attribute(.paragraphStyle, at: eff.location, effectiveRange: nil) as? NSParagraphStyle)?.lineSpacing ?? 0
-                let side = min(g.width, (g.height - lead) * 0.62).rounded()
+                let side = min(g.width - 6, fontSize(at: eff.location) * 1.15).rounded()
                 let box = NSRect(x: g.minX + 1, y: (g.minY + (g.height - lead - side) / 2).rounded(), width: side, height: side)
                 let path = NSBezierPath(roundedRect: box, xRadius: side * 0.28, yRadius: side * 0.28)
                 if checked {
-                    NSColor.controlAccentColor.setFill(); path.fill()
+                    NSColor.controlAccentColor.withAlphaComponent(0.16).setFill(); path.fill()
+                    path.lineWidth = 1.3
+                    NSColor.controlAccentColor.withAlphaComponent(0.75).setStroke(); path.stroke()
                     let tick = NSBezierPath()
                     tick.move(to: NSPoint(x: box.minX + side * 0.26, y: box.minY + side * 0.52))
                     tick.line(to: NSPoint(x: box.minX + side * 0.43, y: box.minY + side * 0.7))
                     tick.line(to: NSPoint(x: box.minX + side * 0.76, y: box.minY + side * 0.3))
                     tick.lineWidth = max(1.5, side * 0.12); tick.lineCapStyle = .round; tick.lineJoinStyle = .round
-                    NSColor.white.setStroke(); tick.stroke()
+                    NSColor.controlAccentColor.setStroke(); tick.stroke()
                 } else {
                     path.lineWidth = 1.3
-                    NSColor.secondaryLabelColor.setStroke(); path.stroke()
+                    NSColor.tertiaryLabelColor.setStroke(); path.stroke()
                 }
             }
             i = max(eff.upperBound, i + 1)
         }
+
+    }
+
+    /// Margin decorations (line numbers, heading badge) sit outside the text container, which NSTextView
+    /// clips layout drawing to, so MarkdownTextView calls this from its own background pass.
+    func drawMargins(_ glyphsToShow: NSRange, at origin: NSPoint) {
+        guard let s = textStorage, s.length > 0 else { return }
+        let chars = characterRange(forGlyphRange: glyphsToShow, actualGlyphRange: nil)
+        if lineNumbers { drawLineNumbers(glyphsToShow, origin) }
 
         // Heading level badge beside the caret's heading.
         if let line = caretLine, line.location < s.length, NSIntersectionRange(line, chars).length > 0 || NSLocationInRange(line.location, chars),
