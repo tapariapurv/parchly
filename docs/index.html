@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Inkdown — a calm, native Markdown editor for macOS</title>
+<meta name="description" content="Edit, create, view and Quick Look Markdown files on macOS. Native, fast, plain .md files.">
+<style>
+:root{--bg:#F5F3EF;--band:#ECEAE6;--ink:#1C1A17;--muted:#6F6A63;--rule:rgba(77,61,38,.16);--accent:#3A6FD8;--tan:#C9B08A;--card:#FBFAF7;
+  --ease-out:cubic-bezier(.23,1,.32,1)}
+@media (prefers-color-scheme:dark){:root{--bg:#1E1D1C;--band:#262523;--ink:#E8E3DB;--muted:#A39D94;--rule:rgba(255,255,255,.12);--accent:#7FA7F5;--card:#252422}}
+*{box-sizing:border-box}
+html{background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
+body{margin:0;font:17px/1.65 ui-serif,"New York",Georgia,serif}
+.sans{font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.wrap{max-width:1080px;margin:0 auto;padding:0 16px}
+header{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--band) 88%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--rule)}
+header .wrap{display:flex;align-items:center;justify-content:space-between;height:56px}
+.logo{font-weight:700;font-size:19px;color:var(--ink)}
+.pill{display:inline-flex;gap:4px;border:1px solid var(--rule);border-radius:12px;padding:3px;background:var(--bg)}
+.pill a{font:13px -apple-system,sans-serif;color:var(--muted);padding:5px 14px;border-radius:9px}
+.pill a:hover{color:var(--ink);text-decoration:none;background:var(--band)}
+.hero{text-align:center;padding:72px 0 24px}
+.hero h1{font-size:clamp(36px,6vw,60px);line-height:1.08;margin:0 0 18px;letter-spacing:-.01em}
+.hero p{font-size:20px;color:var(--muted);max-width:640px;margin:0 auto 28px}
+.cta{display:inline-flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.btn{font:600 15px -apple-system,sans-serif;padding:11px 20px;border-radius:11px;border:1px solid var(--rule);color:var(--ink);background:var(--card);transition:transform .12s var(--ease-out)}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:var(--ink);color:var(--bg);border-color:transparent}
+.btn:hover{text-decoration:none}
+.shot{display:block;width:100%;height:auto;border-radius:12px;border:1px solid var(--rule);box-shadow:0 30px 70px -30px rgba(40,30,15,.35)}
+.hero .shot{margin:48px auto 0;max-width:1000px}
+section{padding:72px 0;border-top:1px solid var(--rule)}
+h2{font-size:34px;line-height:1.15;margin:0 0 12px}
+.lead{color:var(--muted);font-size:19px;max-width:640px;margin:0 0 36px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:20px 22px}
+.card h3{margin:0 0 6px;font-size:19px}
+.card p{margin:0;color:var(--muted);font-size:16px}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:center}
+.split.rev>:first-child{order:2}
+@media (max-width:760px){.split{grid-template-columns:1fr}.split.rev>:first-child{order:0}}
+.tabs{display:flex;gap:6px;margin-bottom:16px}
+.tabs button{font:13px -apple-system,sans-serif;border:1px solid var(--rule);background:var(--bg);color:var(--muted);padding:6px 14px;border-radius:9px;cursor:pointer}
+.tabs button[aria-selected=true]{color:var(--ink);font-weight:600;box-shadow:inset 0 -2px 0 var(--accent)}
+table{border-collapse:collapse;width:100%;font-size:16px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--rule)}
+th{font-weight:600}
+kbd{font:13px ui-monospace,"SF Mono",Menlo,monospace;background:var(--card);border:1px solid var(--rule);border-radius:6px;padding:2px 7px;white-space:nowrap}
+pre{background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:16px 18px;overflow:auto;font:14px/1.6 ui-monospace,"SF Mono",Menlo,monospace}
+blockquote{margin:0;padding-left:16px;border-left:3px solid var(--tan)}
+footer{padding:40px 0 60px;color:var(--muted);font-size:15px;border-top:1px solid var(--rule)}
+.table-wrap{overflow-x:auto}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <span class="logo">Inkdown</span>
+  <nav class="pill" aria-label="Sections"><a href="#features">Features</a><a href="#modes">Modes</a><a href="#quicklook">Quick Look</a><a href="#shortcuts">Shortcuts</a><a href="#install">Install</a></nav>
+</div></header>
+
+<main>
+<div class="wrap hero">
+  <h1>Markdown that reads like a page<br>and saves as plain text.</h1>
+  <p>Inkdown is a native macOS app for writing, viewing and finding Markdown. Edit in a calm document view, and every <code>.md</code> file stays exactly as you typed it.</p>
+  <div class="cta"><a class="btn primary" href="#install">Download &amp; build</a><a class="btn" href="https://github.com/tapariapurv/inkdown">View on GitHub</a></div>
+  <img class="shot" src="assets/document.jpg" alt="Inkdown editing a Markdown document in Document mode, with headings, task checkboxes, a numbered list, a quote and a table" width="1600" height="1000">
+</div>
+
+<section id="features"><div class="wrap">
+  <h2>Everything Markdown, nothing extra</h2>
+  <p class="lead">No library, no database, no account. Inkdown opens <code>.md</code> files and writes them straight back to disk.</p>
+  <div class="grid">
+    <div class="card"><h3>Edit in place</h3><p>Syntax hides while you read and shows up on the line you're editing. Bold, italics, links and code all render inline.</p></div>
+    <div class="card"><h3>Lists that keep up</h3><p>Return continues bullets, numbers and tasks. Tab nests an item, Shift-Tab outdents it, and numbered lists renumber themselves.</p></div>
+    <div class="card"><h3>Real tables</h3><p>Pipe tables show as a grid. Tab moves between cells and reformats the source, and Return adds a row.</p></div>
+    <div class="card"><h3>Clickable tasks</h3><p>Click a checkbox or press <kbd>⌘L</kbd> to tick it. Done items are struck through.</p></div>
+    <div class="card"><h3>Quick Look</h3><p>Press Space on any <code>.md</code> file in Finder to see it fully rendered, without opening the app.</p></div>
+    <div class="card"><h3>Find your files</h3><p><kbd>⌘P</kbd> searches every Markdown file in the document's folder. <kbd>⇧⌘O</kbd> jumps to any heading.</p></div>
+    <div class="card"><h3>Export &amp; print</h3><p>Export clean HTML or paginated PDF, or print straight from the rendered view.</p></div>
+    <div class="card"><h3>Mac-native</h3><p>Autosave, Versions, tabs, rename-in-titlebar, Find &amp; Replace, dark mode and every standard text shortcut.</p></div>
+  </div>
+</div></section>
+
+<section id="modes"><div class="wrap">
+  <h2>One file, three ways to see it</h2>
+  <p class="lead">Use <kbd>⌃⌘1</kbd> for Document and <kbd>⌃⌘2</kbd> for Source. <kbd>⌘\</kbd> adds a live side-by-side preview to either.</p>
+  <div class="tabs" role="tablist">
+    <button role="tab" aria-selected="true" data-src="assets/document.jpg">Document</button>
+    <button role="tab" aria-selected="false" data-src="assets/source.jpg">Source</button>
+    <button role="tab" aria-selected="false" data-src="assets/split.jpg">Split preview</button>
+    <button role="tab" aria-selected="false" data-src="assets/dark.jpg">Dark</button>
+  </div>
+  <img id="mode-shot" class="shot" src="assets/document.jpg" alt="Inkdown window showing the selected mode" width="1600" height="1000">
+</div></section>
+
+<section id="quicklook"><div class="wrap split">
+  <div>
+    <h2>Find it in Finder,<br>read it with Space</h2>
+    <p class="lead">The bundled Quick Look extension renders GitHub-flavored Markdown with tables, task lists, footnotes and code. It uses the same renderer as the app's preview.</p>
+    <blockquote>Select a <code>.md</code> file in Finder and press <kbd>Space</kbd>.</blockquote>
+  </div>
+  <img class="shot" src="assets/quicklook.jpg" alt="Finder Quick Look showing a rendered Markdown file" width="1000" height="1100">
+</div></section>
+
+<section><div class="wrap split rev">
+  <div>
+    <h2>Files and outline,<br>one keystroke away</h2>
+    <p class="lead">The outline button in the margin, or <kbd>⌘P</kbd>, opens a sidebar listing every Markdown file in the folder. Fuzzy-filter it, use the arrow keys and Return, or press <kbd>+</kbd> to create a new file next to the current one.</p>
+  </div>
+  <img class="shot" src="assets/sidebar.jpg" alt="Inkdown with the Files sidebar open" width="1600" height="1000">
+</div></section>
+
+<section id="shortcuts"><div class="wrap">
+  <h2>Keyboard first</h2>
+  <p class="lead">Every command is in the menu bar, so Help search (<kbd>⇧⌘/</kbd>) works as a command palette.</p>
+  <div class="table-wrap"><table>
+    <tr><th>Action</th><th>Shortcut</th><th>Action</th><th>Shortcut</th></tr>
+    <tr><td>Bold / Italic</td><td><kbd>⌘B</kbd> <kbd>⌘I</kbd></td><td>Heading 1–6 / Body</td><td><kbd>⌘1</kbd>–<kbd>⌘6</kbd> <kbd>⌘0</kbd></td></tr>
+    <tr><td>Strikethrough</td><td><kbd>⇧⌘X</kbd></td><td>Bulleted / Numbered list</td><td><kbd>⇧⌘8</kbd> <kbd>⇧⌘7</kbd></td></tr>
+    <tr><td>Inline code</td><td><kbd>⌃`</kbd></td><td>Task list / Toggle done</td><td><kbd>⇧⌘9</kbd> <kbd>⌘L</kbd></td></tr>
+    <tr><td>Link</td><td><kbd>⌘K</kbd></td><td>Quote / Code block</td><td><kbd>⌥⌘Q</kbd> <kbd>⌥⌘C</kbd></td></tr>
+    <tr><td>Insert table</td><td><kbd>⌥⌘T</kbd></td><td>Indent / Outdent</td><td><kbd>⌘]</kbd> <kbd>⌘[</kbd></td></tr>
+    <tr><td>Move line up / down</td><td><kbd>⌃⌘↑</kbd> <kbd>⌃⌘↓</kbd></td><td>Duplicate line</td><td><kbd>⇧⌘D</kbd></td></tr>
+    <tr><td>Document / Source</td><td><kbd>⌃⌘1</kbd> <kbd>⌃⌘2</kbd></td><td>Side-by-side preview</td><td><kbd>⌘\</kbd></td></tr>
+    <tr><td>Go to file / heading</td><td><kbd>⌘P</kbd> <kbd>⇧⌘O</kbd></td><td>Find / Replace</td><td><kbd>⌘F</kbd> <kbd>⌥⌘F</kbd></td></tr>
+    <tr><td>Bigger / Smaller text</td><td><kbd>⌘=</kbd> <kbd>⌘-</kbd></td><td>Reveal in Finder</td><td><kbd>⌥⌘R</kbd></td></tr>
+  </table></div>
+</div></section>
+
+<section id="install"><div class="wrap">
+  <h2>Install</h2>
+  <p class="lead">Inkdown needs macOS 14 or later. Build it from source with Xcode and XcodeGen.</p>
+<pre>brew install xcodegen
+git clone https://github.com/tapariapurv/inkdown.git &amp;&amp; cd inkdown
+xcodegen
+xcodebuild -scheme Inkdown -configuration Release -derivedDataPath build
+cp -R build/Build/Products/Release/Inkdown.app /Applications/</pre>
+  <p class="lead" style="margin-top:20px">If another app's Quick Look extension handles Markdown, choose Inkdown under System Settings › General › Login Items &amp; Extensions › Quick Look.</p>
+</div></section>
+</main>
+
+<footer><div class="wrap">Inkdown · MIT licensed · <a href="https://github.com/tapariapurv/inkdown">Source on GitHub</a></div></footer>
+
+<script>
+// Mode switcher: instant swap, no animation (frequent, user-initiated).
+document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.tabs button').forEach(x => x.setAttribute('aria-selected', x === b));
+  document.getElementById('mode-shot').src = b.dataset.src;
+}));
+</script>
+</body>
+</html>
