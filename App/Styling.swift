@@ -295,7 +295,12 @@ final class Styler {
             s.addAttributes([.mdBlock: 2, .paragraphStyle: paragraph { $0.firstLineHeadIndent = pad; $0.headIndent = pad }], range: full)
             hide(NSRange(location: r.location, length: m.range.length))
             if let a = Self.alertRE.firstMatch(in: text, range: MD.full(text)) {   // GitHub alert title
-                s.addAttributes([.font: NSFont.systemFont(ofSize: fontSize * 0.88, weight: .semibold), .foregroundColor: NSColor.accent], range: NSRange(location: r.location + a.range.location, length: a.range.length))
+                let tag = NSRange(location: r.location + a.range.location, length: a.range.length)
+                s.addAttributes([.font: NSFont.systemFont(ofSize: fontSize * 0.8, weight: .bold), .foregroundColor: NSColor.accent, .kern: fontSize * 0.06], range: tag)
+                if !reveal {   // [!TIP] reads as a clean "TIP" label
+                    hide(NSRange(location: tag.location, length: 2))
+                    hide(NSRange(location: tag.upperBound - 1, length: 1))
+                }
                 return
             }
             inline(s, ns, NSRange(location: r.location + m.range.length, length: r.length - m.range.length), reveal: reveal)

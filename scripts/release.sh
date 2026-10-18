@@ -25,7 +25,31 @@ ln -s /Applications "$OUT/dmg/Applications"
 hdiutil create -quiet -volname "Parchly $VERSION" -srcfolder "$OUT/dmg" -ov -format UDZO "$OUT/Parchly.dmg"
 (cd "$OUT" && shasum -a 256 Parchly.zip Parchly.dmg > SHA256SUMS.txt)
 
+# Sparkle appcast: signed with the EdDSA key stored in the login keychain (scripts: build/spm/artifacts/sparkle).
+SIG=$(build/spm/artifacts/sparkle/Sparkle/bin/sign_update "$OUT/Parchly.zip")
+cat > docs/appcast.xml <<XML
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+  <channel>
+    <title>Parchly</title>
+    <link>https://tapariapurv.github.io/parchly/appcast.xml</link>
+    <item>
+      <title>Parchly $VERSION</title>
+      <pubDate>$(LC_ALL=C date -u "+%a, %d %b %Y %H:%M:%S +0000")</pubDate>
+      <sparkle:version>$BUILD</sparkle:version>
+      <sparkle:shortVersionString>$VERSION</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <sparkle:releaseNotesLink>https://github.com/tapariapurv/parchly/releases/tag/v$VERSION</sparkle:releaseNotesLink>
+      <enclosure url="https://github.com/tapariapurv/parchly/releases/download/v$VERSION/Parchly.zip" type="application/octet-stream" $SIG/>
+    </item>
+  </channel>
+</rss>
+XML
+
 git tag -a "v$VERSION" -m "Parchly $VERSION" 2>/dev/null || true
 git push -q origin "v$VERSION"
 gh release create "v$VERSION" "$OUT/Parchly.dmg" "$OUT/Parchly.zip" "$OUT/SHA256SUMS.txt" \
   --title "Parchly $VERSION" --notes-file "$NOTES" --latest
+
+# Publish the appcast only after the release assets exist, so updaters never see a dead link.
+git add docs/appcast.xml && git commit -qm "Appcast for $VERSION" && git push -q origin HEAD:main

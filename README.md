@@ -25,19 +25,34 @@ Requires macOS 14 Sonoma or later (Apple silicon or Intel). To uninstall, drag P
 
 ## Features
 
-- **Document mode**: syntax hides while you read and reappears on the line you're editing. Headings, bold/italic, code, links, bullets (•/◦), clickable task checkboxes, quote bars, rules and table grids all render inline. An `H1`–`H6` badge marks the caret's heading.
-- **Source mode**: plain monospace text with line numbers.
-- **Side-by-side preview** (`⌘\`): GitHub-flavored rendering via cmark-gfm, kept in sync with the editor's scroll position.
-- **Smart editing**
-  - Return continues bullets, numbered lists, tasks and quotes. Return on an empty item ends the list (or outdents a nested one).
-  - Tab / Shift-Tab nest and outdent list items, and numbered lists renumber themselves.
-  - Tables: Tab and Shift-Tab move between cells and reformat the source, Return adds a row, and Return on an empty row leaves the table.
-  - Backspace right after a list marker or heading prefix removes it.
-  - Pasting a URL over selected text makes a link. ⌘-click opens a link.
-- **Files**: a sidebar lists every Markdown file in the document's folder (`⌘P`, fuzzy filter, keyboard navigation, a **+** button for new files). An outline (`⇧⌘O`) jumps to any heading.
-- **Quick Look extension**: press Space on a `.md` file in Finder to see it rendered.
-- **Plain files only**: no database, no library, no sidecar files. It uses the macOS document architecture, so you get autosave, Versions, Rename/Move from the title bar, and live reload when another app edits the file.
-- Export to HTML or PDF, Print, Reveal in Finder, light/dark/system theme, and font size controls (`⌘=` / `⌘-`).
+- **Document mode** (looks like Downright, edits like Bear): Markdown syntax hides as you read and comes back on the line you're editing. Serif page, H1–H6 margin badge, • bullets, clickable checkboxes, quote bars, table grids, inline code pills and images.
+- **Formatting bar**: a floating Liquid Glass bar with every Markdown tool (headings, bold, italic, strike, code, link, lists, tasks, quote, code block, table, divider). You don't need to know the syntax. Toggle it with ⇧⌘B.
+- **Source mode** (⌃⌘2): monospace Markdown, with optional line numbers in Settings.
+- **Side-by-side preview** (⌘\): GitHub-style rendering with KaTeX math, Mermaid diagrams and colour-coded code, scroll-synced and theme-aware.
+- **Smart editing**: list continuation and renumbering, Tab/Shift-Tab nesting, table cell navigation with auto-formatting, wrap-on-type (select text and type `*`, `_`, `` ` ``, `~`, `=`), bracket auto-pairing, paste a URL to make a link.
+- **Cross-references**: `[[Note]]`, `[[Note|Label]]`, `[[Note#Heading]]` and `[text](#heading)`. ⌘-click follows a link and creates missing notes.
+- **Themes**: Paper (auto light/dark, matching Downright), Paper Light, Warm Dark, Nord, Solarized Light/Dark, High Contrast, Sepia, Forest and Midnight.
+- **Settings** (⌘,): theme, text size, formatting bar, line numbers, spelling, updates.
+- **Automatic updates** via Sparkle (signed appcast), plus **Check for Updates…**.
+- **Quick Look extension**: press Space on any `.md` in Finder.
+- **Files & outline**: ⌘P finds any Markdown file in the folder, and ⇧⌘O jumps to a heading.
+- **Plain files only**: no database, sandboxed, autosave, Versions, Rename/Move, external-change reload, export to PDF/HTML, Print.
+- **Getting started**: a built-in guide opens on first launch (Help › Markdown Guide).
+
+### Markdown support
+
+| Element | Editor | Preview / export | Quick Look |
+| --- | --- | --- | --- |
+| Headings (ATX + setext), emphasis, links, images | ✓ | ✓ | ✓ |
+| Lists, nested lists, task lists | ✓ | ✓ | ✓ |
+| Tables with alignment | ✓ | ✓ | ✓ |
+| Code spans, fenced code with syntax colouring | ✓ | ✓ | ✓ |
+| Blockquotes, GitHub alerts (`> [!NOTE]`) | ✓ | ✓ | ✓ |
+| Strikethrough, autolinks, footnotes, raw HTML, front matter | ✓ | ✓ | ✓ |
+| `==highlight==`, `:emoji:`, heading anchors | ✓ | ✓ | ✓ |
+| `[[Wiki links]]` and cross-references | ✓ | ✓ | ✓ |
+| Math `$…$` / `$$…$$` (KaTeX) | ✓ | ✓ | as source |
+| Mermaid diagrams | ✓ | ✓ | as source |
 
 ## Keyboard shortcuts
 
@@ -92,11 +107,14 @@ Parchly runs in the App Sandbox and includes a privacy manifest (no data collect
 
 ## Tests
 
-The editing rules (lists, renumbering, tables, toggles, code fences) are pure functions with a runnable self-check:
-
 ```sh
-swiftc App/MarkdownLogic.swift Tests/main.swift -o /tmp/mdtest && /tmp/mdtest
+scripts/test.sh
 ```
+
+This runs three suites:
+- **Editing rules** (`Tests/main.swift`): list continuation and renumbering, toggles, table formatting and navigation, code fences.
+- **Live editor** (`Tests/editor.swift`): drives the real text view in both modes. It covers typing, smart Return/Tab/Backspace, wrap and auto-pair, undo/redo, copy/cut/paste (including rich text and URLs), every format command, caret clamping, round-trip fidelity, incremental fence tracking, and a 1 MB performance check (about 12 ms per keystroke).
+- **Renderer**: alerts, math, highlights, wiki links, emoji and code colouring, run through the app's `--render-html` hook.
 
 ## Project layout
 

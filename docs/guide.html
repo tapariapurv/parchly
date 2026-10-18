@@ -1,0 +1,123 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Markdown Guide — how to write Markdown on Mac with Parchly</title>
+<meta name="description" content="A short, friendly guide to Markdown: headings, bold and italic, lists, tasks, tables, links between notes, code, math and diagrams, with Parchly's Mac shortcuts.">
+<link rel="canonical" href="https://tapariapurv.github.io/parchly/guide.html"><link rel="icon" href="assets/icon.png">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.css">
+<style>:root{--bg:#f7f4ee;--surface:#fffdfa;--fg:#292522;--muted:#685f56;--faint:#8b8178;--heading:#181513;--marker:#71665c;--accent:#307afe;--link:#245fb8;--line:#d9d2c8;--selection:#d9e7fc;--code:#eeeae3;--inline-code:#e8e2d9;--quote:#c9b294;--kw:#8e4f7d;--str:#456f58;--num:#1a659e;--com:#8b817c;--type:#1d6ca4;--fn:#2a5db0}
+@media (prefers-color-scheme:dark){:root{--bg:#171614;--surface:#24211e;--fg:#e3ddd5;--muted:#aca297;--faint:#7f776f;--heading:#f4eee5;--marker:#bdb2a6;--accent:#6ea8ff;--link:#8ab8ff;--line:#3d3832;--selection:#253a56;--code:#231f1a;--inline-code:#2d2822;--quote:#625344;--kw:#e0879f;--str:#a8c08a;--num:#8fb8d9;--com:#726a61;--type:#e7c77d;--fn:#8fb8d9}}
+html{background:var(--bg)}
+::selection{background:var(--selection)}
+body{margin:0;padding:48px 32px 96px;color:var(--fg);font:16px/1.55 ui-serif,"New York",Georgia,serif;-webkit-font-smoothing:antialiased}
+article{max-width:70ch;margin:0 auto}
+h1,h2,h3,h4,h5,h6{color:var(--heading);line-height:1.25;margin:1.5em 0 .5em;font-weight:700;scroll-margin-top:24px}
+h1{font-size:1.95em}h2{font-size:1.56em}h3{font-size:1.25em}h4{font-size:1.1em}h5{font-size:1em}h6{font-size:1em;color:var(--muted)}
+article>:first-child{margin-top:0}
+p,ul,ol,blockquote,pre,table{margin:0 0 1em}
+a{color:var(--link);text-decoration:underline;text-decoration-color:color-mix(in srgb,var(--link) 35%,transparent);text-underline-offset:2px}
+code{font:.88em "SF Mono",ui-monospace,Menlo,monospace;background:var(--inline-code);padding:.12em .35em;border-radius:5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;line-height:1.5}
+pre code{background:none;padding:0;font-size:.84em}
+.tok-kw{color:var(--kw)}.tok-str{color:var(--str)}.tok-num{color:var(--num)}.tok-com{color:var(--com);font-style:italic}.tok-type{color:var(--type)}.tok-fn{color:var(--fn)}
+blockquote{margin-left:0;padding:0 0 0 14px;border-left:3px solid var(--quote)}
+hr{border:0;border-top:1px solid var(--line);margin:2em 0}
+ul,ol{padding-left:1.6em}li{margin:.2em 0}li>p{margin:0}
+li::marker{color:var(--marker)}
+li:has(>input[type=checkbox]){list-style:none;margin-left:-1.4em}
+li>input[type=checkbox]{appearance:none;width:1.1em;height:1.1em;margin:0 .55em 0 0;vertical-align:-.15em;border:1.5px solid var(--faint);border-radius:.28em}
+li>input[type=checkbox]:checked{background:color-mix(in srgb,var(--accent) 18%,transparent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5' fill='none' stroke='%23307afe' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/100% no-repeat;border-color:var(--accent)}
+li:has(>input:checked){color:var(--muted);text-decoration:line-through}
+table{border-collapse:collapse;display:block;overflow:auto;width:max-content;max-width:100%}
+th,td{border:1px solid var(--line);padding:6px 12px}th{background:var(--surface);font-weight:600}
+img{max-width:100%;border-radius:6px}
+del{color:var(--muted)}
+.footnotes{font-size:.9em;color:var(--muted)}
+mark{background:color-mix(in srgb,#ffd400 40%,transparent);color:inherit;padding:0 .15em;border-radius:3px}
+.math-inline{font:.9em "SF Mono",ui-monospace,monospace;color:var(--accent)}.math-display{font:.9em "SF Mono",ui-monospace,monospace;text-align:center;margin:1em 0;color:var(--accent)}
+.katex-display{margin:1em 0}.math .katex{color:var(--fg)}
+pre.mermaid{background:none;text-align:center;font:.85em "SF Mono",monospace;color:var(--muted)}
+.alert{border-left-width:4px;border-left-color:var(--alert);background:color-mix(in srgb,var(--alert) 8%,transparent);border-radius:0 8px 8px 0;padding:10px 14px}
+.alert>:last-child{margin-bottom:0}.alert-title{font:600 .9em -apple-system,sans-serif;color:var(--alert);margin:0 0 4px}
+.alert-note{--alert:#307afe}.alert-tip{--alert:#2f7a46}.alert-important{--alert:#7a5cb8}.alert-warning{--alert:#945c0a}.alert-caution{--alert:#b03a34}
+a.wiki{text-decoration-style:dotted}
+nav{max-width:70ch;margin:0 auto 24px;font:14px -apple-system,sans-serif}</style></head>
+<body><nav><a href="./">← Parchly</a> · <a href="./#install">Install Parchly</a></nav><article id="c"><h1 id="welcome-to-parchly">Welcome to Parchly</h1>
+<p>Parchly is a calm place to write. Your notes are plain <strong>Markdown</strong> files, so they open anywhere, and Parchly makes them read like a finished page.</p>
+<blockquote class="alert alert-tip">
+<p class="alert-title">Tip</p>
+<p>You don't need to learn any syntax. Use the <strong>formatting bar</strong> at the bottom of the window, or the <strong>Format</strong> menu. Everything has a shortcut.</p>
+</blockquote>
+<h2 id="the-basics">The basics</h2>
+<ul>
+<li><strong>Bold</strong> with ⌘B, <em>italic</em> with ⌘I, <del>strikethrough</del> with ⇧⌘X</li>
+<li>Headings with ⌘1 to ⌘6 (⌘0 returns to body text)</li>
+<li>Select a word and type <code>*</code>, <code>_</code>, <code>`</code> or <code>==</code> to wrap it, like <mark>this</mark></li>
+<li>Paste a link over selected text to make a <a href="https://github.com/tapariapurv/parchly">link</a></li>
+</ul>
+<h2 id="lists-and-tasks">Lists and tasks</h2>
+<ol>
+<li>Press Return to continue a list</li>
+<li>Press Tab to nest an item, Shift-Tab to bring it back</li>
+<li>Numbers fix themselves</li>
+</ol>
+<ul>
+<li><input type="checkbox" checked="" disabled="" /> Click a checkbox to tick it</li>
+<li><input type="checkbox" disabled="" /> Or press ⌘L</li>
+</ul>
+<h2 id="tables">Tables</h2>
+<table>
+<thead>
+<tr>
+<th>Press</th>
+<th>To</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>⌥⌘T</td>
+<td>Insert a table</td>
+</tr>
+<tr>
+<td>Tab</td>
+<td>Move to the next cell</td>
+</tr>
+<tr>
+<td>Return</td>
+<td>Add a row</td>
+</tr>
+</tbody>
+</table>
+<h2 id="notes-that-link-together">Notes that link together</h2>
+<p>Type <code>[[Another Note]]</code> to link to another note in this folder. ⌘-click the link to open it, and Parchly creates the note if it doesn't exist yet. Jump to a heading with <code>[[Another Note#Some Heading]]</code>, or link within this page: <a href="#welcome-to-parchly">back to the top</a>.</p>
+<h2 id="code-math-and-diagrams">Code, math and diagrams</h2>
+<pre lang="swift"><code><span class="tok-kw">let</span> greeting = <span class="tok-str">"Hello, Parchly"</span>   <span class="tok-com">// fenced code is colour-coded</span>
+</code></pre>
+<p>Inline math like <span class="math math-inline">E = mc^2</span> and blocks:</p>
+<div class="math math-display">
+\sum_{n=1}^{\infty} \frac{1}{n^2} = \frac{\pi^2}{6}
+</div>
+<pre class="mermaid">graph LR
+  Write --&gt; Preview --&gt; Share
+</pre>
+<p>Open the side-by-side preview (⌘\) to see math and diagrams rendered. Footnotes work too.<sup class="footnote-ref"><a href="#fn-1" id="fnref-1" data-footnote-ref>1</a></sup></p>
+<h2 id="find-anything">Find anything</h2>
+<ul>
+<li>⌘P finds any Markdown file in this folder</li>
+<li>⇧⌘O jumps to a heading</li>
+<li>⌘F finds text, ⌥⌘F replaces</li>
+<li>Press Space on a <code>.md</code> file in Finder for a Quick Look preview</li>
+</ul>
+<h2 id="make-it-yours">Make it yours</h2>
+<p>Open <strong>Settings</strong> (⌘,) to pick a theme, change the text size, or turn on line numbers for Source mode (⌃⌘2). Parchly keeps itself up to date.</p>
+<section class="footnotes" data-footnotes>
+<ol>
+<li id="fn-1">
+<p>Like this one. <a href="#fnref-1" class="footnote-backref" data-footnote-backref data-footnote-backref-idx="1" aria-label="Back to reference 1">↩</a></p>
+</li>
+</ol>
+</section>
+
+</article>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.1/mermaid.min.js"></script>
+<script>document.querySelectorAll('.math').forEach(e=>{try{katex.render(e.textContent,e,{displayMode:e.classList.contains('math-display'),throwOnError:false})}catch(_){}});mermaid.initialize({startOnLoad:false,theme:matchMedia('(prefers-color-scheme: dark)').matches?'dark':'neutral'});mermaid.run({querySelector:'pre.mermaid'});</script>
+</body></html>

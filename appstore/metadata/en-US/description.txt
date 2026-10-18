@@ -6,6 +6,11 @@ WRITE LIKE IT'S ALREADY FORMATTED
 • Bullets, numbered lists and clickable task checkboxes
 • Quotes, code blocks, rules and real table grids
 
+NO SYNTAX REQUIRED
+• A floating formatting bar puts every tool one click away: headings, bold, italic, lists, tasks, quotes, code, tables
+• Every button has a keyboard shortcut for when you're ready
+• A friendly guide opens on first launch
+
 LISTS AND TABLES THAT KEEP UP
 • Return continues a list, and Return on an empty item ends it
 • Tab and Shift-Tab nest items, and numbered lists renumber themselves
@@ -15,6 +20,17 @@ LISTS AND TABLES THAT KEEP UP
 SOURCE MODE AND LIVE PREVIEW
 • Switch to plain monospaced Source with line numbers in one keystroke
 • Open a side-by-side, GitHub-flavored preview with tables, task lists and footnotes
+
+NOTES THAT LINK TOGETHER
+• [[Wiki links]] and [[Note#Heading]] cross-references; ⌘-click to follow, or to create a note that doesn't exist yet
+• Heading anchors and links within a page
+
+MATH, DIAGRAMS AND CODE
+• KaTeX math, Mermaid diagrams, GitHub alerts, highlights and emoji in the live preview
+• Colour-coded code blocks
+
+NINE THEMES
+• Paper follows your Mac's light and dark appearance; or choose Warm Dark, Nord, Solarized, Sepia, Forest, Midnight or High Contrast
 
 FIND AND PREVIEW YOUR FILES
 • Quick Look extension: press Space on any .md file in Finder to see it rendered
