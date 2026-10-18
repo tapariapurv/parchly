@@ -23,6 +23,35 @@ final class MarkdownTextView: NSTextView {
         lm.drawMargins(glyphs, at: origin)
     }
 
+    // MARK: Typing helpers
+
+    private static let wrappers: [String: String] = ["*": "*", "_": "_", "`": "`", "~": "~", "=": "=", "\"": "\"", "(": ")", "[": "]", "{": "}"]
+    private static let pairs: [String: String] = ["(": ")", "[": "]", "{": "}"]
+
+    /// Typing a marker with text selected wraps it (select "word", type * → *word*); brackets auto-close.
+    override func insertText(_ string: Any, replacementRange: NSRange) {
+        guard let s = string as? String, s.count == 1, !hasMarkedText(), replacementRange.location == NSNotFound else {
+            return super.insertText(string, replacementRange: replacementRange)
+        }
+        let sel = selectedRange()
+        if sel.length > 0, let close = Self.wrappers[s], !ns.substring(with: sel).contains("\n") {
+            breakUndoCoalescing()
+            let text = ns.substring(with: sel)
+            return replace(sel, with: s + text + close, select: NSRange(location: sel.location + 1, length: (text as NSString).length))
+        }
+        if sel.length == 0, !styler.inCode(sel.location) {
+            let next = sel.location < ns.length ? ns.substring(with: NSRange(location: sel.location, length: 1)) : ""
+            if Self.pairs.values.contains(s), next == s {   // type over an auto-inserted closer
+                return setSelectedRange(NSRange(location: sel.location + 1, length: 0))
+            }
+            if let close = Self.pairs[s], next.isEmpty || next.rangeOfCharacter(from: .whitespacesAndNewlines.union(.punctuationCharacters)) != nil, next != "(" {
+                super.insertText(s + close, replacementRange: replacementRange)
+                return setSelectedRange(NSRange(location: selectedRange().location - 1, length: 0))
+            }
+        }
+        super.insertText(string, replacementRange: replacementRange)
+    }
+
     // MARK: Edit primitives
 
     /// One undoable replacement. Selection is given in post-edit coordinates.
@@ -163,6 +192,11 @@ final class MarkdownTextView: NSTextView {
     override func deleteBackward(_ sender: Any?) {
         let sel = selectedRange()
         guard sel.length == 0, !hasMarkedText(), !styler.inCode(sel.location) else { return super.deleteBackward(sender) }
+        // Backspace inside an empty auto-closed pair removes both halves.
+        if sel.location > 0, sel.location < ns.length, let close = Self.pairs[ns.substring(with: NSRange(location: sel.location - 1, length: 1))],
+           ns.substring(with: NSRange(location: sel.location, length: 1)) == close {
+            return replace(NSRange(location: sel.location - 1, length: 2), with: "", select: NSRange(location: sel.location - 1, length: 0))
+        }
         let cur = line(at: sel.location)
         let prefix = Styler.prefixLength(cur.text)
         if prefix > 0, MD.parse(cur.text) == nil, sel.location - cur.range.location == prefix {

@@ -12,35 +12,119 @@ enum Renderer {
         for name in ["table", "strikethrough", "autolink", "tagfilter", "tasklist"] {
             if let ext = cmark_find_syntax_extension(name) { cmark_parser_attach_syntax_extension(parser, ext) }
         }
-        let source = frontMatterAsCode(markdown)
+        var math: [(String, Bool)] = []
+        let source = protectMath(frontMatterAsCode(markdown), into: &math)
         cmark_parser_feed(parser, source, source.utf8.count)
         guard let doc = cmark_parser_finish(parser) else { return "" }
         defer { cmark_node_free(doc) }
         guard let out = cmark_render_html(doc, options, cmark_parser_get_syntax_extensions(parser)) else { return "" }
         defer { free(out) }
-        return polish(String(cString: out))
+        return restoreMath(polish(String(cString: out)), math)
     }
 
-    private static let codeRE = try! NSRegularExpression(pattern: #"<pre><code([^>]*)>(.*?)</code></pre>"#, options: .dotMatchesLineSeparators)
+    // MARK: Extensions beyond GFM
+
+    private static let mathRE = try! NSRegularExpression(pattern: #"(```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\n]*`)|\$\$([\s\S]+?)\$\$|(?<![\\$\w])\$(?=\S)([^$\n]+?)(?<=\S)\$(?![\w$])"#)
+
+    /// Swaps $…$ / $$…$$ for private-use placeholders so cmark can't mangle backslashes or underscores.
+    static func protectMath(_ s: String, into math: inout [(String, Bool)]) -> String {
+        let ns = s as NSString
+        var out = "", at = 0
+        for m in mathRE.matches(in: s, range: NSRange(location: 0, length: ns.length)) where m.range(at: 1).location == NSNotFound {
+            let display = m.range(at: 2).location != NSNotFound
+            out += ns.substring(with: NSRange(location: at, length: m.range.location - at))
+            out += "\u{E000}\(math.count)\u{E001}"
+            math.append((ns.substring(with: m.range(at: display ? 2 : 3)), display))
+            at = m.range.upperBound
+        }
+        return out + ns.substring(from: at)
+    }
+
+    static func restoreMath(_ html: String, _ math: [(String, Bool)]) -> String {
+        var s = html
+        for (i, (tex, display)) in math.enumerated() {
+            let esc = tex.replacingOccurrences(of: "&", with: "&amp;").replacingOccurrences(of: "<", with: "&lt;").replacingOccurrences(of: ">", with: "&gt;")
+            let tag = display ? "<div class=\"math math-display\">\(esc)</div>" : "<span class=\"math math-inline\">\(esc)</span>"
+            s = s.replacingOccurrences(of: display ? "<p>\u{E000}\(i)\u{E001}</p>" : "\u{E000}\(i)\u{E001}", with: tag)
+            s = s.replacingOccurrences(of: "\u{E000}\(i)\u{E001}", with: tag)
+        }
+        return s
+    }
+
+    private static let alertRE = try! NSRegularExpression(pattern: #"<blockquote>\n<p>\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*"#, options: .caseInsensitive)
+    private static let textRE = try! NSRegularExpression(pattern: #"<pre[\s\S]*?</pre>|<code[\s\S]*?</code>|<[^>]+>|[^<]+"#)
+    private static let markRE = try! NSRegularExpression(pattern: #"==(?=\S)([^=]+?)(?<=\S)=="#)
+    private static let wikiRE = try! NSRegularExpression(pattern: #"\[\[([^\]|]+)(?:\|([^\]]+))?\]\]"#)
+    private static let emojiRE = try! NSRegularExpression(pattern: #":([a-z0-9_+-]+):"#)
+    static let emoji: [String: String] = [
+        "smile": "😄", "grin": "😁", "joy": "😂", "wink": "😉", "heart": "❤️", "thumbsup": "👍", "+1": "👍", "thumbsdown": "👎", "-1": "👎",
+        "tada": "🎉", "rocket": "🚀", "fire": "🔥", "star": "⭐", "sparkles": "✨", "check": "✔️", "white_check_mark": "✅", "x": "❌",
+        "warning": "⚠️", "bulb": "💡", "memo": "📝", "book": "📖", "bug": "🐛", "zap": "⚡", "eyes": "👀", "thinking": "🤔", "pray": "🙏",
+        "clap": "👏", "wave": "👋", "ok_hand": "👌", "100": "💯", "coffee": "☕", "lock": "🔒", "key": "🔑", "link": "🔗", "pushpin": "📌",
+        "calendar": "📅", "chart_with_upwards_trend": "📈", "construction": "🚧", "question": "❓", "exclamation": "❗", "smiley": "😃",
+        "sob": "😭", "cry": "😢", "sunglasses": "😎", "muscle": "💪", "apple": "🍎", "computer": "💻", "gear": "⚙️", "hammer": "🔨",
+    ]
+
+    /// [[Note]] → Note.md, [[Note#Heading]] → Note.md#heading, [[#Heading]] → #heading.
+    static func wikiHref(_ target: String) -> String {
+        let parts = target.split(separator: "#", maxSplits: 1, omittingEmptySubsequences: false).map(String.init)
+        let file = parts[0].isEmpty ? "" : (parts[0].hasSuffix(".md") ? parts[0] : parts[0] + ".md")
+        let anchor = parts.count > 1 ? "#" + slug(parts[1]) : ""
+        return (file.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? file) + anchor
+    }
+
+    /// GitHub-style heading id.
+    static func slug(_ text: String) -> String {
+        text.lowercased().components(separatedBy: CharacterSet.alphanumerics.union(.init(charactersIn: " -_")).inverted).joined()
+            .replacingOccurrences(of: " ", with: "-")
+    }
+
+    /// GitHub alerts, Mermaid blocks, ==highlights==, [[wiki links]] and :emoji: on top of cmark-gfm's output.
+    static func extend(_ html: String) -> String {
+        var s = html
+        for m in alertRE.matches(in: s, range: NSRange(location: 0, length: (s as NSString).length)).reversed() {
+            let kind = (s as NSString).substring(with: m.range(at: 1)).lowercased()
+            s = (s as NSString).replacingCharacters(in: m.range, with: "<blockquote class=\"alert alert-\(kind)\">\n<p class=\"alert-title\">\(kind.capitalized)</p>\n<p>")
+        }
+        s = s.replacingOccurrences(of: #"<pre lang="mermaid"><code>([\s\S]*?)</code></pre>"#, with: "<pre class=\"mermaid\">$1</pre>", options: .regularExpression)
+        let ns = s as NSString
+        return textRE.matches(in: s, range: NSRange(location: 0, length: ns.length)).map { m -> String in
+            var t = ns.substring(with: m.range)
+            guard !t.hasPrefix("<") else { return t }
+            t = markRE.stringByReplacingMatches(in: t, range: NSRange(location: 0, length: (t as NSString).length), withTemplate: "<mark>$1</mark>")
+            for w in wikiRE.matches(in: t, range: NSRange(location: 0, length: (t as NSString).length)).reversed() {
+                let tn = t as NSString
+                let target = tn.substring(with: w.range(at: 1)).trimmingCharacters(in: .whitespaces)
+                let label = w.range(at: 2).location != NSNotFound ? tn.substring(with: w.range(at: 2)) : target
+                t = tn.replacingCharacters(in: w.range, with: "<a class=\"wiki\" href=\"\(wikiHref(target))\">\(label)</a>")
+            }
+            for e in emojiRE.matches(in: t, range: NSRange(location: 0, length: (t as NSString).length)).reversed() {
+                if let glyph = emoji[(t as NSString).substring(with: e.range(at: 1))] { t = (t as NSString).replacingCharacters(in: e.range, with: glyph) }
+            }
+            return t
+        }.joined()
+    }
+
+    private static let codeRE = try! NSRegularExpression(pattern: #"<pre(?: lang="([^"]*)")?><code[^>]*>(.*?)</code></pre>"#, options: .dotMatchesLineSeparators)
     private static let headingRE = try! NSRegularExpression(pattern: #"<h([1-6])>(.*?)</h\1>"#)
 
     /// Adds syntax colouring to fenced code and stable ids to headings (for #anchor links).
     static func polish(_ html: String) -> String {
         var s = html as NSString
         for m in codeRE.matches(in: s as String, range: NSRange(location: 0, length: s.length)).reversed() {
+            if m.range(at: 1).location != NSNotFound, s.substring(with: m.range(at: 1)) == "mermaid" { continue }
             let body = Highlighter.html(s.substring(with: m.range(at: 2)))
             s = s.replacingCharacters(in: m.range(at: 2), with: body) as NSString
         }
         var used: [String: Int] = [:]
         for m in headingRE.matches(in: s as String, range: NSRange(location: 0, length: s.length)).reversed() {
             let text = s.substring(with: m.range(at: 2)).replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
-            var slug = text.lowercased().components(separatedBy: CharacterSet.alphanumerics.union(.init(charactersIn: " -")).inverted).joined()
-                .replacingOccurrences(of: " ", with: "-")
+            var slug = Self.slug(text)
             if let n = used[slug] { used[slug] = n + 1; slug += "-\(n)" } else { used[slug] = 1 }
             let tag = "<h\(s.substring(with: m.range(at: 1)))"
             s = s.replacingCharacters(in: NSRange(location: m.range.location, length: (tag as NSString).length), with: tag + " id=\"\(slug)\"") as NSString
         }
-        return s as String
+        return extend(s as String)
     }
 
     /// Full standalone page. `base` lets relative image paths resolve against the document's folder.
@@ -89,5 +173,13 @@ enum Renderer {
     img{max-width:100%;border-radius:6px}
     del{color:var(--muted)}
     .footnotes{font-size:.9em;color:var(--muted)}
+    mark{background:color-mix(in srgb,#ffd400 40%,transparent);color:inherit;padding:0 .15em;border-radius:3px}
+    .math-inline{font:.9em "SF Mono",ui-monospace,monospace;color:var(--accent)}.math-display{font:.9em "SF Mono",ui-monospace,monospace;text-align:center;margin:1em 0;color:var(--accent)}
+    .katex-display{margin:1em 0}.math .katex{color:var(--fg)}
+    pre.mermaid{background:none;text-align:center;font:.85em "SF Mono",monospace;color:var(--muted)}
+    .alert{border-left-width:4px;border-left-color:var(--alert);background:color-mix(in srgb,var(--alert) 8%,transparent);border-radius:0 8px 8px 0;padding:10px 14px}
+    .alert>:last-child{margin-bottom:0}.alert-title{font:600 .9em -apple-system,sans-serif;color:var(--alert);margin:0 0 4px}
+    .alert-note{--alert:#307afe}.alert-tip{--alert:#2f7a46}.alert-important{--alert:#7a5cb8}.alert-warning{--alert:#945c0a}.alert-caution{--alert:#b03a34}
+    a.wiki{text-decoration-style:dotted}
     """
 }

@@ -38,6 +38,13 @@ final class PreviewController: NSViewController, WKNavigationDelegate {
         let config = WKWebViewConfiguration()
         config.defaultWebpagePreferences.allowsContentJavaScript = false
         config.setURLSchemeHandler(LocalFiles(), forURLScheme: LocalFiles.scheme)
+        // KaTeX + Mermaid run as app scripts (page JavaScript stays disabled); window.__render re-typesets after each edit.
+        for name in ["katex.min.js", "mermaid.min.js"] {
+            if let url = Bundle.main.url(forResource: name, withExtension: nil, subdirectory: "vendor"), let js = try? String(contentsOf: url, encoding: .utf8) {
+                config.userContentController.addUserScript(WKUserScript(source: js, injectionTime: .atDocumentEnd, forMainFrameOnly: true, in: .defaultClient))
+            }
+        }
+        config.userContentController.addUserScript(WKUserScript(source: Self.renderScript, injectionTime: .atDocumentEnd, forMainFrameOnly: true, in: .defaultClient))
         web = WKWebView(frame: NSRect(x: 0, y: 0, width: 600, height: 600), configuration: config)
         web.navigationDelegate = self
         web.setValue(false, forKey: "drawsBackground")   // no white flash before CSS paints
@@ -58,15 +65,41 @@ final class PreviewController: NSViewController, WKNavigationDelegate {
     private func reload() {
         loaded = false
         let page = Renderer.page("").replacingOccurrences(of: "<article id=\"c\"></article>", with: "<article id=\"c\">\(html)</article>")
-            .replacingOccurrences(of: "</head>", with: "<style id=\"theme\">\(Self.themeCSS)</style></head>")
+            .replacingOccurrences(of: "</head>", with: "<style>\(Self.katexCSS)</style><style id=\"theme\">\(Self.themeCSS)</style></head>")
         web.loadHTMLString(page, baseURL: base.map(LocalFiles.url) ?? URL(string: "\(LocalFiles.scheme):///")!)
     }
 
     func update(_ markdown: String, then: (() -> Void)? = nil) {
         html = Renderer.html(markdown)
         guard loaded else { then?(); return }
-        web.evaluateJavaScript("document.getElementById('c').innerHTML = \(Self.js(html))", in: nil, in: .defaultClient) { _ in then?() }
+        web.evaluateJavaScript("document.getElementById('c').innerHTML = \(Self.js(html)); window.__render && __render()", in: nil, in: .defaultClient) { _ in then?() }
     }
+
+    static let renderScript = """
+    window.__render = function () {
+      if (window.katex) document.querySelectorAll('.math').forEach(function (el) {
+        try { katex.render(el.textContent, el, { displayMode: el.classList.contains('math-display'), throwOnError: false }); } catch (e) {}
+      });
+      if (window.mermaid) {
+        var dark = matchMedia('(prefers-color-scheme: dark)').matches || /color-scheme:dark/.test(document.getElementById('theme').textContent);
+        mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', securityLevel: 'strict' });
+        mermaid.run({ querySelector: 'pre.mermaid' }).catch(function () {});
+      }
+    };
+    __render();
+    """
+
+    /// KaTeX's stylesheet with its fonts inlined as data URIs (no file or network access needed).
+    static let katexCSS: String = {
+        guard let dir = Bundle.main.url(forResource: "vendor", withExtension: nil),
+              var css = try? String(contentsOf: dir.appendingPathComponent("katex.min.css"), encoding: .utf8) else { return "" }
+        css = css.replacingOccurrences(of: #"url\((fonts/[^)]+\.woff2)\) format\("woff2"\)"#, with: "url(__$1__) format(\"woff2\")", options: .regularExpression)
+        for f in (try? FileManager.default.contentsOfDirectory(atPath: dir.appendingPathComponent("fonts").path)) ?? [] {
+            guard let data = try? Data(contentsOf: dir.appendingPathComponent("fonts/\(f)")) else { continue }
+            css = css.replacingOccurrences(of: "__fonts/\(f)__", with: "data:font/woff2;base64,\(data.base64EncodedString())")
+        }
+        return css.replacingOccurrences(of: #",url\(fonts/[^)]+\) format\("(woff|truetype)"\)"#, with: "", options: .regularExpression)
+    }()
 
     /// Fixed themes override the page's light/dark palette; Paper (Auto) uses the built-in CSS.
     static var themeCSS: String { Theme.all.contains { $0.id == Theme.id } ? Theme.current.css : "" }
@@ -85,7 +118,7 @@ final class PreviewController: NSViewController, WKNavigationDelegate {
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         loaded = true
-        web.evaluateJavaScript("document.getElementById('c').innerHTML = \(Self.js(html))", in: nil, in: .defaultClient) { _ in }
+        web.evaluateJavaScript("document.getElementById('c').innerHTML = \(Self.js(html)); window.__render && __render()", in: nil, in: .defaultClient) { _ in }
     }
 
     func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
@@ -214,6 +247,7 @@ final class WindowController: NSWindowController, NSWindowDelegate, NSToolbarDel
         let root = url?.deletingLastPathComponent()
         window?.subtitle = root?.lastPathComponent ?? ""
         preview.setBase(root)
+        if editor.styler.baseURL != root { editor.styler.baseURL = root; editor.textView.textStorage.map(editor.styler.restyleAll) }
         if sidebar.root != root { sidebar.root = root; sidebar.reload() }
     }
 
@@ -318,12 +352,29 @@ final class WindowController: NSWindowController, NSWindowDelegate, NSToolbarDel
 
     // MARK: Files & links
 
+    /// Follows a link from the editor: URLs, relative files, `#heading` anchors and `[[wiki]]` cross-references.
     private func open(link: String) {
+        var link = link, isWiki = false
+        if link.hasPrefix("wiki:") { link = Renderer.wikiHref(String(link.dropFirst(5))); isWiki = true }
         if let url = URL(string: link), url.scheme != nil { return open(url: url) }
-        guard let root = sidebar.root else { return }
-        let path = link.components(separatedBy: "#")[0].removingPercentEncoding ?? link
-        guard !path.isEmpty else { return }
-        open(url: URL(fileURLWithPath: path, relativeTo: root).standardizedFileURL)
+        let parts = link.split(separator: "#", maxSplits: 1, omittingEmptySubsequences: false).map(String.init)
+        let path = parts[0].removingPercentEncoding ?? parts[0]
+        if path.isEmpty, parts.count > 1 { return jump(toAnchor: parts[1]) }
+        guard let root = sidebar.root, !path.isEmpty else { return }
+        let url = URL(fileURLWithPath: path, relativeTo: root).standardizedFileURL
+        if isWiki, FolderAccess.canRead(root), !FileManager.default.fileExists(atPath: url.path) {
+            // A wiki link to a note that doesn't exist yet creates it, like Bear and Obsidian.
+            try? Data("# \(url.deletingPathExtension().lastPathComponent)\n\n".utf8).write(to: url, options: .withoutOverwriting)
+            sidebar.reload()
+        }
+        open(url: url)
+    }
+
+    private func jump(toAnchor anchor: String) {
+        let text = editor.text as NSString
+        if let h = MD.headings(text, code: editor.styler.code).first(where: { Renderer.slug($0.title) == anchor.lowercased() }) {
+            editor.jump(to: h.location)
+        }
     }
 
     /// Asks once for a folder (App Sandbox), then remembers it across launches.

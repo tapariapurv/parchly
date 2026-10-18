@@ -22,7 +22,13 @@ targets:
   Parchly:
     type: application
     platform: macOS
-    sources: [App, Shared]
+    sources:
+      - path: App
+        excludes: ["Resources/**"]
+      - Shared
+      - path: App/Resources/vendor
+        type: folder
+        buildPhase: resources
     dependencies:
       - package: cmark
         product: cmark-gfm

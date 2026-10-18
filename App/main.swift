@@ -16,7 +16,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         FolderAccess.restore()
     }
 
-    func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool { true }
+    private var firstLaunch: Bool { !UserDefaults.standard.bool(forKey: "launchedBefore") }
+
+    func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool { !firstLaunch }
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        if firstLaunch {
+            UserDefaults.standard.set(true, forKey: "launchedBefore")
+            if NSDocumentController.shared.documents.isEmpty { showGuide(nil) }
+        }
+    }
+
+    /// Opens the guide as a fresh untitled document (closing it never asks to save).
+    @objc func showGuide(_ sender: Any?) {
+        guard let doc = try? NSDocumentController.shared.openUntitledDocumentAndDisplay(true) as? Document else { return }
+        doc.controller?.editor.setText(Guide.text)
+    }
 }
 
 private func item(_ title: String, _ action: Selector?, _ key: String = "", _ mods: NSEvent.ModifierFlags = .command, tag: Int = 0) -> NSMenuItem {
@@ -151,10 +166,15 @@ private func buildMenu() -> NSMenu {
     ])
     main.addItem(window)
     NSApp.windowsMenu = window.submenu
-    let help = menu("Help", [])
+    let help = menu("Help", [item("Markdown Guide", #selector(AppDelegate.showGuide(_:)))])
     main.addItem(help)
     NSApp.helpMenu = help.submenu
     return main
+}
+
+// Test hook: `Parchly --render-html < file.md` prints the preview HTML and exits (stdin works inside the sandbox).
+if CommandLine.arguments.contains("--render-html") {
+    print(Renderer.html(String(decoding: FileHandle.standardInput.readDataToEndOfFile(), as: UTF8.self))); exit(0)
 }
 
 let delegate = AppDelegate()

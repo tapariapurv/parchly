@@ -9,13 +9,36 @@ extension NSAttributedString.Key {
     static let mdHeading = NSAttributedString.Key("mdHeading")   // heading level, for the margin badge
     static let mdTableRow = NSAttributedString.Key("mdTableRow") // 1 header, 2 separator, 3 body
     static let mdPipe = NSAttributedString.Key("mdPipe")
-    static let mdInlineCode = NSAttributedString.Key("mdInlineCode")   // drawn as a rounded pill
+    static let mdInlineCode = NSAttributedString.Key("mdInlineCode")   // pill: 1 inline code, 2 ==highlight==
+    static let mdImage = NSAttributedString.Key("mdImage")             // ImageBox drawn under its line
 }
 
 /// Live Markdown styling of the source text.
 /// Document mode hides syntax (except inline markers on the caret's line); Source mode shows everything.
 final class Styler {
     var fontSize: CGFloat = 16
+    /// Folder of the open document, for drawing relative images inline.
+    var baseURL: URL?
+    private var images: [String: NSImage?] = [:]
+
+    private static let setextRE = try! NSRegularExpression(pattern: #"^ {0,3}(=+|-+)[ \t]*$"#)
+    private static let imageLineRE = try! NSRegularExpression(pattern: #"^\s*!\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)\s*$"#)
+    private static let refDefRE = try! NSRegularExpression(pattern: #"^ {0,3}\[\^?[^\]]+\]:"#)
+    private static let alertRE = try! NSRegularExpression(pattern: #"\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]"#, options: .caseInsensitive)
+    private static let wikiRE = try! NSRegularExpression(pattern: #"\[\[([^\]|]+)(\|[^\]]+)?\]\]"#)
+    private static let mathRE = try! NSRegularExpression(pattern: #"\$\$[^$]+\$\$|(?<![\\$\w])\$(?=\S)[^$\n]+?(?<=\S)\$(?![\w$])"#)
+    private static let footRE = try! NSRegularExpression(pattern: #"\[\^[^\]\s]+\]"#)
+    private static let htmlRE = try! NSRegularExpression(pattern: #"</?[A-Za-z][A-Za-z0-9-]*(?:\s[^<>]*)?/?>"#)
+    private static let markRE = try! NSRegularExpression(pattern: #"==(?=\S)([^=\n]+?)(?<=\S)=="#)
+
+    /// Image for an inline `![](path)` line, scaled to the column (nil when it can't be read, e.g. no folder access).
+    func image(_ path: String) -> NSImage? {
+        if let cached = images[path] { return cached }
+        let url = path.hasPrefix("/") ? URL(fileURLWithPath: path) : baseURL.map { URL(fileURLWithPath: path.removingPercentEncoding ?? path, relativeTo: $0) }
+        let img = url.flatMap { $0.isFileURL ? NSImage(contentsOf: $0) : nil }
+        images[path] = img
+        return img
+    }
     var wysiwyg = true
     /// Whole lines holding the selection; their inline markers stay visible in Document mode.
     var revealed = NSRange(location: NSNotFound, length: 0)
@@ -47,13 +70,21 @@ final class Styler {
     /// Call from `textStorage(_:didProcessEditing:...)` (willProcess would widen the edited range and drag the caret along). Restyles the edited block unless fence structure changed.
     func restyle(_ s: NSTextStorage, edited: NSRange, delta: Int) {
         let ns = s.string as NSString
-        let newCode = MD.codeBlocks(ns)
         let oldEnd = edited.upperBound - delta
         let predicted = code.map { r -> NSRange in
             if r.upperBound <= edited.location { return r }
             if r.location >= oldEnd { return NSRange(location: r.location + delta, length: r.length) }
             return NSRange(location: r.location, length: r.length + delta)
         }
+        // An insertion can only change fences on a line that is, or was, a fence line,
+        // so ordinary typing skips rescanning the whole document.
+        var fenceSafe = false
+        if delta > 0, edited.length < 4096 {
+            let lines = ns.lineRange(for: edited)
+            let touchesBoundary = predicted.contains { NSLocationInRange($0.location, lines) || NSLocationInRange(max($0.location, $0.upperBound - 1), lines) }
+            fenceSafe = !touchesBoundary && MD.fenceRE.firstMatch(in: ns as String, range: lines) == nil
+        }
+        let newCode = fenceSafe ? predicted : MD.codeBlocks(ns)
         let structural = predicted != newCode
         code = newCode
         style(s, range: structural ? NSRange(location: 0, length: ns.length) : block(around: edited, in: ns))
@@ -139,7 +170,17 @@ final class Styler {
                 k = end
             }
         }
-        for (k, line) in lines.enumerated() { styleLine(s, ns, line.full, line.content, table: table[k], stops: stops[k]) }
+        // Setext headings: a paragraph line underlined with === or ---.
+        var setext = Array(repeating: 0, count: lines.count)
+        for k in 1..<max(1, lines.count) where table[k] == 0 && !inCode(lines[k].content.location) {
+            let t = ns.substring(with: lines[k].content), prev = ns.substring(with: lines[k - 1].content)
+            guard let m = Self.setextRE.firstMatch(in: t, range: MD.full(t)), !prev.trimmingCharacters(in: .whitespaces).isEmpty,
+                  setext[k - 1] == 0, table[k - 1] == 0, !inCode(lines[k - 1].content.location), MD.parse(prev) == nil,
+                  Self.headingRE.firstMatch(in: prev, range: MD.full(prev)) == nil, !MD.isHR(prev) else { continue }
+            setext[k - 1] = (t as NSString).substring(with: m.range(at: 1)).hasPrefix("=") ? 1 : 2
+            setext[k] = -1
+        }
+        for (k, line) in lines.enumerated() { styleLine(s, ns, line.full, line.content, table: table[k], stops: stops[k], setext: setext[k]) }
         // We run after NSTextStorage's own fixing pass, so do font fallback (e.g. ⌘ in New York) ourselves.
         s.fixAttributes(in: NSRange(location: lines[0].full.location, length: lines[lines.count - 1].full.upperBound - lines[0].full.location))
     }
@@ -153,7 +194,7 @@ final class Styler {
         return p
     }
 
-    private func styleLine(_ s: NSTextStorage, _ ns: NSString, _ full: NSRange, _ r: NSRange, table: Int, stops: [CGFloat] = []) {
+    private func styleLine(_ s: NSTextStorage, _ ns: NSString, _ full: NSRange, _ r: NSRange, table: Int, stops: [CGFloat] = [], setext: Int = 0) {
         s.setAttributes([.font: body, .foregroundColor: NSColor.ink, .paragraphStyle: paragraph()], range: full)
         let text = ns.substring(with: r)
         let doc = wysiwyg
@@ -175,16 +216,37 @@ final class Styler {
             }
             return
         }
-        if let m = Self.headingRE.firstMatch(in: text, range: MD.full(text)) {
-            let level = m.range(at: 1).length
+        if setext == -1 {   // the === / --- underline
+            if doc && !reveal {
+                s.addAttributes([.font: NSFont.systemFont(ofSize: 1), .paragraphStyle: paragraph { $0.lineSpacing = 0; $0.maximumLineHeight = 2 }], range: full)
+                s.addAttribute(.mdHide, value: true, range: r)
+            } else { s.addAttribute(.foregroundColor, value: NSColor.syntax, range: r) }
+            return
+        }
+        if setext > 0 || Self.headingRE.firstMatch(in: text, range: MD.full(text)) != nil {
+            let m = Self.headingRE.firstMatch(in: text, range: MD.full(text))
+            let level = m?.range(at: 1).length ?? setext
+            let prefixLen = m?.range.length ?? 0
             let scale: [CGFloat] = [2.0, 1.56, 1.25, 1.1, 1, 1]
             let size = fontSize * scale[level - 1]
             if doc {
                 s.addAttributes([.font: serif(size, .bold), .foregroundColor: NSColor.heading, .mdHeading: level, .paragraphStyle: paragraph { $0.paragraphSpacingBefore = self.fontSize * (level <= 2 ? 1.6 : 0.9); $0.paragraphSpacing = self.fontSize * 0.2 }], range: full)
             }
             if level == 6 { s.addAttribute(.foregroundColor, value: NSColor.inkSecondary, range: r) }
-            hide(NSRange(location: r.location, length: m.range.length))
-            inline(s, ns, NSRange(location: r.location + m.range.length, length: r.length - m.range.length), reveal: reveal)
+            hide(NSRange(location: r.location, length: prefixLen))
+            inline(s, ns, NSRange(location: r.location + prefixLen, length: r.length - prefixLen), reveal: reveal)
+            return
+        }
+        if Self.refDefRE.firstMatch(in: text, range: MD.full(text)) != nil, !text.hasPrefix("[^") {
+            s.addAttributes([.foregroundColor: NSColor.syntax, .font: mono], range: r)   // [id]: url reference definition
+            return
+        }
+        if doc, let m = Self.imageLineRE.firstMatch(in: text, range: MD.full(text)), let img = image((text as NSString).substring(with: m.range(at: 1))) {
+            let maxW = fontSize * 34, scale = min(1, maxW / max(1, img.size.width), 420 / max(1, img.size.height))
+            let size = NSSize(width: img.size.width * scale, height: img.size.height * scale)
+            s.addAttributes([.mdImage: ImageBox(image: img, size: size), .paragraphStyle: paragraph { $0.paragraphSpacing = size.height + 14 }], range: full)
+            if !reveal { s.addAttribute(.foregroundColor, value: NSColor.syntax, range: r) }
+            inline(s, ns, r, reveal: reveal)
             return
         }
         if MD.isHR(text) {
@@ -232,6 +294,10 @@ final class Styler {
         if let m = Self.quoteRE.firstMatch(in: text, range: MD.full(text)) {
             s.addAttributes([.mdBlock: 2, .paragraphStyle: paragraph { $0.firstLineHeadIndent = pad; $0.headIndent = pad }], range: full)
             hide(NSRange(location: r.location, length: m.range.length))
+            if let a = Self.alertRE.firstMatch(in: text, range: MD.full(text)) {   // GitHub alert title
+                s.addAttributes([.font: NSFont.systemFont(ofSize: fontSize * 0.88, weight: .semibold), .foregroundColor: NSColor.accent], range: NSRange(location: r.location + a.range.location, length: a.range.length))
+                return
+            }
             inline(s, ns, NSRange(location: r.location + m.range.length, length: r.length - m.range.length), reveal: reveal)
             return
         }
@@ -283,11 +349,33 @@ final class Styler {
             if reveal { s.addAttribute(.foregroundColor, value: NSColor.syntax, range: x) } else { s.addAttribute(.mdHide, value: true, range: x) }
         }
 
-        for m in Self.codeSpanRE.matches(in: str, range: r) {
+        for m in Self.mathRE.matches(in: str, range: r) {   // $math$
+            s.addAttributes([.font: mono, .foregroundColor: NSColor.accent], range: m.range)
+            taken.append(m.range)
+        }
+        for m in Self.codeSpanRE.matches(in: str, range: r) where free(m.range) {
             let ticks = m.range(at: 1).length
-            s.addAttributes([.font: mono, .mdInlineCode: true], range: m.range)
+            s.addAttributes([.font: mono, .mdInlineCode: 1], range: m.range)
             marker(NSRange(location: m.range.location, length: ticks))
             marker(NSRange(location: m.range.upperBound - ticks, length: ticks))
+            taken.append(m.range)
+        }
+        for m in Self.wikiRE.matches(in: str, range: r) where free(m.range) {   // [[Note]], [[Note|Label]], [[Note#Heading]]
+            let target = ns.substring(with: m.range(at: 1))
+            let hasLabel = m.range(at: 2).location != NSNotFound
+            let shown = hasLabel ? NSRange(location: m.range(at: 2).location + 1, length: m.range(at: 2).length - 1) : m.range(at: 1)
+            marker(NSRange(location: m.range.location, length: shown.location - m.range.location))
+            marker(NSRange(location: shown.upperBound, length: m.range.upperBound - shown.upperBound))
+            s.addAttributes([.foregroundColor: NSColor.link, .mdURL: "wiki:" + target], range: shown)
+            if !reveal { s.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue | NSUnderlineStyle.patternDot.rawValue, range: shown) }
+            taken.append(m.range)
+        }
+        for m in Self.footRE.matches(in: str, range: r) where free(m.range) {   // [^1] footnote reference
+            s.addAttributes([.font: NSFont.systemFont(ofSize: fontSize * 0.7, weight: .medium), .baselineOffset: fontSize * 0.35, .foregroundColor: NSColor.accent], range: m.range)
+            taken.append(m.range)
+        }
+        for m in Self.htmlRE.matches(in: str, range: r) where free(m.range) {   // inline HTML tags
+            s.addAttributes([.foregroundColor: NSColor.syntax, .font: mono], range: m.range)
             taken.append(m.range)
         }
         for m in Self.linkRE.matches(in: str, range: r) where free(m.range) {
@@ -315,6 +403,11 @@ final class Styler {
         }
         for m in Self.strikeRE.matches(in: str, range: r) where free(m.range) {
             s.addAttributes([.strikethroughStyle: NSUnderlineStyle.single.rawValue, .foregroundColor: NSColor.inkSecondary], range: m.range)
+            marker(NSRange(location: m.range.location, length: 2))
+            marker(NSRange(location: m.range.upperBound - 2, length: 2))
+        }
+        for m in Self.markRE.matches(in: str, range: r) where free(m.range) {   // ==highlight==
+            s.addAttribute(.mdInlineCode, value: 2, range: m.range(at: 1))
             marker(NSRange(location: m.range.location, length: 2))
             marker(NSRange(location: m.range.upperBound - 2, length: 2))
         }
@@ -395,7 +488,9 @@ final class MDLayoutManager: NSLayoutManager, NSLayoutManagerDelegate {
         var i = chars.location
         while i < end {
             var eff = NSRange()
-            if let kind = s.attribute(.mdBlock, at: i, longestEffectiveRange: &eff, in: all) as? Int {
+            // Search only the visible span; widen to the whole block only when one is actually there.
+            if s.attribute(.mdBlock, at: i, longestEffectiveRange: &eff, in: NSRange(location: i, length: end - i)) != nil,
+               let kind = s.attribute(.mdBlock, at: i, longestEffectiveRange: &eff, in: all) as? Int {
                 let r = rect(eff, origin)
                 switch kind {
                 case 1:
@@ -417,7 +512,7 @@ final class MDLayoutManager: NSLayoutManager, NSLayoutManagerDelegate {
         i = chars.location
         while i < end {
             var eff = NSRange()
-            if s.attribute(.mdTableRow, at: i, longestEffectiveRange: &eff, in: all) != nil {
+            if s.attribute(.mdTableRow, at: i, longestEffectiveRange: &eff, in: NSRange(location: i, length: end - i)) != nil {
                 enumerateLineFragments(forGlyphRange: glyphRange(forCharacterRange: eff, actualCharacterRange: nil)) { frag, _, _, glyphs, _ in
                     let lineChars = self.characterRange(forGlyphRange: glyphs, actualGlyphRange: nil)
                     guard let row = s.attribute(.mdTableRow, at: lineChars.location, effectiveRange: nil) as? Int else { return }
@@ -439,16 +534,35 @@ final class MDLayoutManager: NSLayoutManager, NSLayoutManagerDelegate {
             i = max(eff.upperBound, i + 1)
         }
 
+        // Inline images, drawn in the paragraph spacing reserved under their line.
+        i = chars.location
+        while i < end {
+            var eff = NSRange()
+            if let box = s.attribute(.mdImage, at: i, longestEffectiveRange: &eff, in: NSRange(location: i, length: end - i)) as? ImageBox {
+                let g = glyphRange(forCharacterRange: eff, actualCharacterRange: nil)
+                if g.length > 0 {
+                    let used = lineFragmentUsedRect(forGlyphAt: NSMaxRange(g) - 1, effectiveRange: nil)
+                    let rect = NSRect(x: origin.x + tc.lineFragmentPadding, y: origin.y + used.maxY + 4, width: box.size.width, height: box.size.height)
+                    NSGraphicsContext.saveGraphicsState()
+                    NSBezierPath(roundedRect: rect, xRadius: 8, yRadius: 8).addClip()
+                    box.image.draw(in: rect, from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
+                    NSGraphicsContext.restoreGraphicsState()
+                }
+            }
+            i = max(eff.upperBound, i + 1)
+        }
+
         // Inline code pills (a backgroundColor would fill the whole line height, line spacing included).
         i = chars.location
         while i < end {
             var eff = NSRange()
-            if s.attribute(.mdInlineCode, at: i, longestEffectiveRange: &eff, in: NSRange(location: i, length: end - i)) != nil {
+            if let kind = s.attribute(.mdInlineCode, at: i, longestEffectiveRange: &eff, in: NSRange(location: i, length: end - i)) as? Int {
                 let lead = (s.attribute(.paragraphStyle, at: eff.location, effectiveRange: nil) as? NSParagraphStyle)?.lineSpacing ?? 0
                 enumerateEnclosingRects(forGlyphRange: glyphRange(forCharacterRange: eff, actualCharacterRange: nil), withinSelectedGlyphRange: NSRange(location: NSNotFound, length: 0), in: tc) { r, _ in
                     let pill = NSRect(x: r.minX - 3, y: r.minY + 1, width: r.width + 6, height: r.height - lead - 1).offsetBy(dx: origin.x, dy: origin.y)
-                    NSColor.inlineCodeFill.setFill()
+                    (kind == 2 ? NSColor.systemYellow.withAlphaComponent(0.35) : NSColor.inlineCodeFill).setFill()
                     NSBezierPath(roundedRect: pill, xRadius: 5, yRadius: 5).fill()
+                    guard kind == 1 else { return }
                     NSColor.rule.withAlphaComponent(0.6).setStroke()
                     NSBezierPath(roundedRect: pill.insetBy(dx: 0.5, dy: 0.5), xRadius: 5, yRadius: 5).stroke()
                 }
@@ -512,4 +626,9 @@ final class MDLayoutManager: NSLayoutManager, NSLayoutManagerDelegate {
             }
         }
     }
+}
+
+final class ImageBox: NSObject {
+    let image: NSImage, size: NSSize
+    init(image: NSImage, size: NSSize) { self.image = image; self.size = size }
 }
