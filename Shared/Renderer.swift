@@ -52,12 +52,12 @@ enum Renderer {
     code{font:.88em ui-monospace,"SF Mono",Menlo,monospace;background:var(--code);padding:.15em .35em;border-radius:5px}
     pre{background:var(--code);padding:14px 16px;border-radius:8px;overflow:auto;line-height:1.5}
     pre code{background:none;padding:0;font-size:.86em}
-    blockquote{margin-left:0;padding:0 0 0 14px;border-left:3px solid #C9B08A;color:var(--muted);font-style:italic}
+    blockquote{margin-left:0;padding:0 0 0 14px;border-left:3px solid #C9B08A}
     hr{border:0;border-top:1px solid var(--line);margin:2em 0}
     ul,ol{padding-left:1.6em}li{margin:.2em 0}li>p{margin:0}
     li:has(>input[type=checkbox]){list-style:none;margin-left:-1.4em}
     li::marker{color:var(--muted)}
-    li>input[type=checkbox]{appearance:none;width:.95em;height:.95em;margin:0 .55em 0 0;vertical-align:-.12em;border:1.5px solid var(--muted);border-radius:.25em}
+    li>input[type=checkbox]{appearance:none;width:1.1em;height:1.1em;margin:0 .55em 0 0;vertical-align:-.12em;border:1.5px solid var(--muted);border-radius:.25em}
     li>input[type=checkbox]:checked{background:var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/100% no-repeat;border-color:var(--accent)}
     li:has(>input:checked){color:var(--muted);text-decoration:line-through}
     table{border-collapse:collapse;display:block;overflow:auto;width:max-content;max-width:100%}
