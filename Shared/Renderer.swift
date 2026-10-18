@@ -56,7 +56,10 @@ enum Renderer {
     hr{border:0;border-top:1px solid var(--line);margin:2em 0}
     ul,ol{padding-left:1.6em}li{margin:.2em 0}li>p{margin:0}
     li:has(>input[type=checkbox]){list-style:none;margin-left:-1.4em}
-    li>input[type=checkbox]{margin:0 .5em 0 0;vertical-align:-1px;accent-color:var(--accent)}
+    li::marker{color:var(--muted)}
+    li>input[type=checkbox]{appearance:none;width:.95em;height:.95em;margin:0 .55em 0 0;vertical-align:-.12em;border:1.5px solid var(--muted);border-radius:.25em}
+    li>input[type=checkbox]:checked{background:var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/100% no-repeat;border-color:var(--accent)}
+    li:has(>input:checked){color:var(--muted);text-decoration:line-through}
     table{border-collapse:collapse;display:block;overflow:auto;width:max-content;max-width:100%}
     th,td{border:1px solid var(--line);padding:6px 12px}th{background:var(--code);font-weight:600}
     img{max-width:100%;border-radius:6px}
