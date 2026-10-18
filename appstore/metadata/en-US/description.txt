@@ -1,4 +1,4 @@
-Inkdown is a calm, native Markdown editor for your Mac. Write in a view that reads like a finished page, and your files stay plain Markdown on disk, exactly as you typed them. No library, no database, no account.
+Parchly is a calm, native Markdown editor for your Mac. Write in a view that reads like a finished page, and your files stay plain Markdown on disk, exactly as you typed them. No library, no database, no account.
 
 WRITE LIKE IT'S ALREADY FORMATTED
 • Markdown syntax fades away as you read and comes back on the line you're editing
@@ -23,13 +23,13 @@ FIND AND PREVIEW YOUR FILES
 
 A PROPER MAC APP
 • Autosave, version history, tabs, and Rename and Move from the title bar
-• If another app changes your file, Inkdown reloads it
+• If another app changes your file, Parchly reloads it
 • Find & Replace, spelling, dictation and every standard text shortcut
 • Export to PDF or HTML, or print
 • Light, Dark or System appearance, and adjustable text size
 • Keyboard shortcuts for every format, from ⌘B and ⌘K to ⌘1–⌘6 headings
 
 PRIVATE BY DESIGN
-Inkdown collects no data, has no account and needs no internet connection. Your writing stays in your files.
+Parchly collects no data, has no account and needs no internet connection. Your writing stays in your files.
 
 Opens .md, .markdown, .mdown, .mkd, .mkdn and .mdwn files.

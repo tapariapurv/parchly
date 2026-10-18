@@ -1,6 +1,6 @@
 # Mac App Store kit
 
-Everything needed to list Inkdown on the Mac App Store. The app is already sandboxed and ships a privacy manifest.
+Everything needed to list Parchly on the Mac App Store. The app is already sandboxed and ships a privacy manifest.
 
 | Path | What |
 | --- | --- |
@@ -17,10 +17,10 @@ The name already covers *Markdown* and *Editor*, and the subtitle covers *write,
 
 ## Submitting (needs the paid Apple Developer Program)
 1. Join the Apple Developer Program with team `7PM4P8RLL2` and sign in under Xcode › Settings › Accounts.
-2. In App Store Connect, create a macOS app with bundle ID `com.purvt.Inkdown`, SKU `inkdown`, primary language English.
+2. In App Store Connect, create a macOS app with bundle ID `com.purvt.Parchly`, SKU `parchly`, primary language English.
 3. Run `scripts/appstore.sh`. It archives a universal build and uploads it. Xcode creates the distribution certificates automatically.
 4. Paste in or `deliver` the metadata and screenshots, then answer the privacy questionnaire with **Data Not Collected**. Encryption is already declared (`ITSAppUsesNonExemptEncryption = NO`).
 5. Submit for review with `review_notes.txt`.
 
 ## Privacy nutrition label
-Data Not Collected. Policy: https://tapariapurv.github.io/inkdown/privacy.html
+Data Not Collected. Policy: https://tapariapurv.github.io/parchly/privacy.html

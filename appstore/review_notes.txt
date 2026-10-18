@@ -1,4 +1,4 @@
-Inkdown is a document-based Markdown editor. To test: File > New, type "- item" and press Return to see list continuation; ⌥⌘T inserts a table (Tab moves between cells); ⌃⌘2 switches to Source mode; ⌘\ shows the preview.
+Parchly is a document-based Markdown editor. To test: File > New, type "- item" and press Return to see list continuation; ⌥⌘T inserts a table (Tab moves between cells); ⌃⌘2 switches to Source mode; ⌘\ shows the preview.
 Quick Look: select any .md file in Finder and press Space.
 The sidebar (⌘P) asks the user to grant access to the document's folder via an open panel; this is stored as a security-scoped bookmark so the app can list sibling Markdown files and show relative images.
 com.apple.security.network.client is used only by WKWebView's helper processes for the local preview; the app makes no network requests.

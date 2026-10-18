@@ -1,27 +1,27 @@
-<img src="docs/assets/icon-512.png" width="128" alt="Inkdown icon">
+<img src="docs/assets/icon-512.png" width="128" alt="Parchly icon">
 
-# Inkdown
+# Parchly
 
 A calm, native Markdown editor for macOS: **edit, create, view and Quick Look** `.md` files.
 The look follows [Downright](https://downright.cc). The goal is that every feature just works.
 
-**Website:** https://tapariapurv.github.io/inkdown/
+**Website:** https://tapariapurv.github.io/parchly/
 
-![Inkdown in Document mode](docs/assets/document.jpg)
+![Parchly in Document mode](docs/assets/document.jpg)
 
 ## Install
 
 **One line.** Paste into Terminal:
 
 ```sh
-curl -fsSL https://tapariapurv.github.io/inkdown/install.sh | bash
+curl -fsSL https://tapariapurv.github.io/parchly/install.sh | bash
 ```
 
-This downloads the [latest release](https://github.com/tapariapurv/inkdown/releases/latest), installs it into `/Applications`, turns on the Quick Look extension and opens the app. ([Read the script](docs/install.sh).)
+This downloads the [latest release](https://github.com/tapariapurv/parchly/releases/latest), installs it into `/Applications`, turns on the Quick Look extension and opens the app. ([Read the script](docs/install.sh).)
 
-**Or** download [`Inkdown.dmg`](https://github.com/tapariapurv/inkdown/releases/latest/download/Inkdown.dmg) and drag the app into Applications. The build isn't notarized yet, so on first launch go to **System Settings › Privacy & Security › Open Anyway**.
+**Or** download [`Parchly.dmg`](https://github.com/tapariapurv/parchly/releases/latest/download/Parchly.dmg) and drag the app into Applications. The build isn't notarized yet, so on first launch go to **System Settings › Privacy & Security › Open Anyway**.
 
-Requires macOS 14 Sonoma or later (Apple silicon or Intel). To uninstall, drag Inkdown to the Trash.
+Requires macOS 14 Sonoma or later (Apple silicon or Intel). To uninstall, drag Parchly to the Trash.
 
 ## Features
 
@@ -70,25 +70,25 @@ Requires macOS 14+, Xcode 16+ and [XcodeGen](https://github.com/yonaskolb/XcodeG
 
 ```sh
 brew install xcodegen
-xcodegen                                   # generates Inkdown.xcodeproj from project.yml
-xcodebuild -scheme Inkdown -configuration Release -derivedDataPath build
-cp -R build/Build/Products/Release/Inkdown.app /Applications/
+xcodegen                                   # generates Parchly.xcodeproj from project.yml
+xcodebuild -scheme Parchly -configuration Release -derivedDataPath build
+cp -R build/Build/Products/Release/Parchly.app /Applications/
 ```
 
 Set `DEVELOPMENT_TEAM` in `project.yml` to your own team ID to sign with your certificate.
 
 ### Quick Look
 
-The extension registers when the app is first launched from `/Applications`. If another app (for example Downright) also previews Markdown, macOS uses whichever extension is enabled. Pick Inkdown in **System Settings › General › Login Items & Extensions › Quick Look**, or from the terminal:
+The extension registers when the app is first launched from `/Applications`. If another app (for example Downright) also previews Markdown, macOS uses whichever extension is enabled. Pick Parchly in **System Settings › General › Login Items & Extensions › Quick Look**, or from the terminal:
 
 ```sh
-pluginkit -e use -i com.purvt.InkdownQuickLook
+pluginkit -e use -i com.purvt.ParchlyQuickLook
 qlmanage -r
 ```
 
 ## Mac App Store
 
-Inkdown runs in the App Sandbox and includes a privacy manifest (no data collected). The App Store listing (metadata, keywords, captioned screenshots, review notes) is in [`appstore/`](appstore/), along with [`scripts/appstore.sh`](scripts/appstore.sh) for archiving and uploading. Submitting requires a paid Apple Developer Program membership; see [appstore/README.md](appstore/README.md).
+Parchly runs in the App Sandbox and includes a privacy manifest (no data collected). The App Store listing (metadata, keywords, captioned screenshots, review notes) is in [`appstore/`](appstore/), along with [`scripts/appstore.sh`](scripts/appstore.sh) for archiving and uploading. Submitting requires a paid Apple Developer Program membership; see [appstore/README.md](appstore/README.md).
 
 ## Tests
 

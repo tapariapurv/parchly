@@ -1,4 +1,4 @@
-// Renders the Inkdown app icon set. Run: swift scripts/make-icon.swift
+// Renders the Parchly app icon set: a dog-eared parchment page with a serif P and a caret. Run: swift scripts/make-icon.swift
 import AppKit
 
 func render(_ px: Int) -> Data {
@@ -14,43 +14,48 @@ func render(_ px: Int) -> Data {
     let shape = NSBezierPath(roundedRect: body, xRadius: 186, yRadius: 186)
     ctx.saveGState()
     ctx.setShadow(offset: CGSize(width: 0, height: -12), blur: 28, color: NSColor(white: 0, alpha: 0.28).cgColor)
-    NSColor(srgbRed: 0.965, green: 0.955, blue: 0.937, alpha: 1).setFill()
+    NSColor(srgbRed: 0.93, green: 0.88, blue: 0.79, alpha: 1).setFill()
     shape.fill()
     ctx.restoreGState()
     shape.addClip()
-    NSGradient(colors: [NSColor(srgbRed: 0.985, green: 0.978, blue: 0.962, alpha: 1), NSColor(srgbRed: 0.918, green: 0.902, blue: 0.872, alpha: 1)])!
+    NSGradient(colors: [NSColor(srgbRed: 0.96, green: 0.92, blue: 0.84, alpha: 1), NSColor(srgbRed: 0.86, green: 0.78, blue: 0.64, alpha: 1)])!
         .draw(in: body, angle: -90)
 
-    // Faint ruled lines, like a page.
-    NSColor(srgbRed: 0.45, green: 0.36, blue: 0.22, alpha: 0.10).setFill()
-    for y in stride(from: 250.0, through: 760.0, by: 85.0) { NSRect(x: 190, y: y, width: 644, height: 6).fill() }
-    // Tan margin bar (the blockquote accent).
-    NSColor(srgbRed: 0.79, green: 0.69, blue: 0.54, alpha: 1).setFill()
-    NSBezierPath(roundedRect: NSRect(x: 190, y: 230, width: 16, height: 560), xRadius: 8, yRadius: 8).fill()
-
-    // Ink drop: round base, pointed top.
-    let drop = NSBezierPath()
-    let c = NSPoint(x: 540, y: 430), r: CGFloat = 190
-    drop.move(to: NSPoint(x: c.x, y: 820))
-    drop.curve(to: NSPoint(x: c.x + r, y: c.y), controlPoint1: NSPoint(x: c.x + 40, y: 720), controlPoint2: NSPoint(x: c.x + r, y: 600))
-    drop.appendArc(withCenter: c, radius: r, startAngle: 0, endAngle: 180, clockwise: true)
-    drop.curve(to: NSPoint(x: c.x, y: 820), controlPoint1: NSPoint(x: c.x - r, y: 600), controlPoint2: NSPoint(x: c.x - 40, y: 720))
+    // A page with a dog-eared corner.
+    let page = NSRect(x: 262, y: 200, width: 500, height: 610), fold: CGFloat = 120
+    let sheet = NSBezierPath()
+    sheet.move(to: NSPoint(x: page.minX + 28, y: page.minY))
+    sheet.line(to: NSPoint(x: page.maxX - 28, y: page.minY))
+    sheet.curve(to: NSPoint(x: page.maxX, y: page.minY + 28), controlPoint1: NSPoint(x: page.maxX - 12, y: page.minY), controlPoint2: NSPoint(x: page.maxX, y: page.minY + 12))
+    sheet.line(to: NSPoint(x: page.maxX, y: page.maxY - fold))
+    sheet.line(to: NSPoint(x: page.maxX - fold, y: page.maxY))
+    sheet.line(to: NSPoint(x: page.minX + 28, y: page.maxY))
+    sheet.curve(to: NSPoint(x: page.minX, y: page.maxY - 28), controlPoint1: NSPoint(x: page.minX + 12, y: page.maxY), controlPoint2: NSPoint(x: page.minX, y: page.maxY - 12))
+    sheet.line(to: NSPoint(x: page.minX, y: page.minY + 28))
+    sheet.curve(to: NSPoint(x: page.minX + 28, y: page.minY), controlPoint1: NSPoint(x: page.minX, y: page.minY + 12), controlPoint2: NSPoint(x: page.minX + 12, y: page.minY))
     ctx.saveGState()
-    ctx.setShadow(offset: CGSize(width: 0, height: -10), blur: 24, color: NSColor(srgbRed: 0.1, green: 0.08, blue: 0.05, alpha: 0.35).cgColor)
-    NSGradient(colors: [NSColor(srgbRed: 0.2, green: 0.19, blue: 0.18, alpha: 1), NSColor(srgbRed: 0.07, green: 0.065, blue: 0.06, alpha: 1)])!
-        .draw(in: drop, angle: -90)
+    ctx.setShadow(offset: CGSize(width: 0, height: -14), blur: 30, color: NSColor(srgbRed: 0.35, green: 0.25, blue: 0.1, alpha: 0.28).cgColor)
+    NSColor(srgbRed: 1, green: 0.992, blue: 0.976, alpha: 1).setFill()
+    sheet.fill()
     ctx.restoreGState()
+    let corner = NSBezierPath()
+    corner.move(to: NSPoint(x: page.maxX - fold, y: page.maxY))
+    corner.line(to: NSPoint(x: page.maxX - fold + 10, y: page.maxY - fold + 10))
+    corner.line(to: NSPoint(x: page.maxX, y: page.maxY - fold))
+    corner.close()
+    NSColor(srgbRed: 0.87, green: 0.82, blue: 0.74, alpha: 1).setFill()
+    corner.fill()
 
-    // Down arrow knocked out of the drop.
-    let arrow = NSBezierPath()
-    arrow.lineWidth = 46; arrow.lineCapStyle = .round; arrow.lineJoinStyle = .round
-    arrow.move(to: NSPoint(x: c.x, y: 560)); arrow.line(to: NSPoint(x: c.x, y: 330))
-    arrow.move(to: NSPoint(x: c.x - 92, y: 420)); arrow.line(to: NSPoint(x: c.x, y: 326)); arrow.line(to: NSPoint(x: c.x + 92, y: 420))
-    NSColor(srgbRed: 0.965, green: 0.955, blue: 0.937, alpha: 1).setStroke()
-    arrow.stroke()
-    // Highlight on the drop.
-    NSColor(white: 1, alpha: 0.16).setFill()
-    NSBezierPath(ovalIn: NSRect(x: c.x - 125, y: c.y + 40, width: 60, height: 110)).fill()
+    // Serif "P", a caret and two ruled lines of text.
+    let font = NSFont(descriptor: NSFont.systemFont(ofSize: 400, weight: .black).fontDescriptor.withDesign(.serif)!, size: 400)!
+    let p = NSAttributedString(string: "P", attributes: [.font: font, .foregroundColor: NSColor(srgbRed: 0.094, green: 0.082, blue: 0.075, alpha: 1)])
+    let size = p.size()
+    p.draw(at: NSPoint(x: page.minX + 70, y: page.minY + 245 - size.height * 0.2))
+    NSColor(srgbRed: 0.188, green: 0.478, blue: 0.996, alpha: 1).setFill()
+    NSBezierPath(roundedRect: NSRect(x: page.minX + 330, y: page.minY + 300, width: 22, height: 230), xRadius: 11, yRadius: 11).fill()
+    NSColor(srgbRed: 0.79, green: 0.70, blue: 0.58, alpha: 1).setFill()
+    NSBezierPath(roundedRect: NSRect(x: page.minX + 70, y: page.minY + 170, width: 360, height: 22), xRadius: 11, yRadius: 11).fill()
+    NSBezierPath(roundedRect: NSRect(x: page.minX + 70, y: page.minY + 110, width: 250, height: 22), xRadius: 11, yRadius: 11).fill()
 
     NSGraphicsContext.current = nil
     return rep.representation(using: .png, properties: [:])!

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Inkdown — a calm, native Markdown editor for macOS</title>
+<title>Parchly — a calm, native Markdown editor for macOS</title>
 <link rel="icon" href="assets/icon.png">
 <meta name="description" content="Edit, create, view and Quick Look Markdown files on macOS. Native, fast, plain .md files.">
 <style>
@@ -110,17 +110,17 @@ header.scrolled{box-shadow:0 8px 24px -16px rgba(40,30,15,.35)}
 </head>
 <body>
 <header><div class="wrap">
-  <span class="logo"><img src="assets/icon.png" alt="" width="28" height="28" style="vertical-align:-7px;margin-right:8px">Inkdown</span>
+  <span class="logo"><img src="assets/icon.png" alt="" width="28" height="28" style="vertical-align:-7px;margin-right:8px">Parchly</span>
   <nav class="pill" aria-label="Sections"><a href="#features">Features</a><a href="#modes">Modes</a><a href="#quicklook">Quick Look</a><a href="#shortcuts">Shortcuts</a><a href="#install">Install</a></nav>
 </div></header>
 
 <main>
 <div class="wrap hero">
-  <img src="assets/icon-512.png" alt="Inkdown app icon" width="128" height="128" style="margin-bottom:16px">
+  <img src="assets/icon-512.png" alt="Parchly app icon" width="128" height="128" style="margin-bottom:16px">
   <h1>Markdown that reads like a page<br>and saves as plain text.</h1>
-  <p>Inkdown is a native macOS app for writing, viewing and finding Markdown. Edit in a calm document view, and every <code>.md</code> file stays exactly as you typed it.</p>
-  <div class="cta"><a class="btn primary" href="#install">Install Inkdown</a><a class="btn" href="https://github.com/tapariapurv/inkdown">View on GitHub</a></div>
-  <div class="stage"><img class="shot" src="assets/document.jpg" alt="Inkdown editing a Markdown document in Document mode, with headings, task checkboxes, a numbered list, a quote and a table" width="1600" height="1000"></div>
+  <p>Parchly is a native macOS app for writing, viewing and finding Markdown. Edit in a calm document view, and every <code>.md</code> file stays exactly as you typed it.</p>
+  <div class="cta"><a class="btn primary" href="#install">Install Parchly</a><a class="btn" href="https://github.com/tapariapurv/parchly">View on GitHub</a></div>
+  <div class="stage"><img class="shot" src="assets/document.jpg" alt="Parchly editing a Markdown document in Document mode, with headings, task checkboxes, a numbered list, a quote and a table" width="1600" height="1000"></div>
 </div>
 
 <section id="demo"><div class="wrap split">
@@ -133,7 +133,7 @@ header.scrolled{box-shadow:0 8px 24px -16px rgba(40,30,15,.35)}
 
 <section id="features"><div class="wrap">
   <h2 class="reveal">Everything Markdown, nothing extra</h2>
-  <p class="lead reveal">No library, no database, no account. Inkdown opens <code>.md</code> files and writes them straight back to disk.</p>
+  <p class="lead reveal">No library, no database, no account. Parchly opens <code>.md</code> files and writes them straight back to disk.</p>
   <div class="grid">
     <div class="card reveal"><h3>Edit in place</h3><p>Syntax hides while you read and shows up on the line you're editing. Bold, italics, links and code all render inline.</p></div>
     <div class="card reveal"><h3>Lists that keep up</h3><p>Return continues bullets, numbers and tasks. Tab nests an item, Shift-Tab outdents it, and numbered lists renumber themselves.</p></div>
@@ -155,7 +155,7 @@ header.scrolled{box-shadow:0 8px 24px -16px rgba(40,30,15,.35)}
     <button role="tab" aria-selected="false" data-src="assets/split.jpg">Split preview</button>
     <button role="tab" aria-selected="false" data-src="assets/dark.jpg">Dark</button>
   </div>
-  <img id="mode-shot" class="shot reveal" src="assets/document.jpg" alt="Inkdown window showing the selected mode" width="1600" height="1000">
+  <img id="mode-shot" class="shot reveal" src="assets/document.jpg" alt="Parchly window showing the selected mode" width="1600" height="1000">
 </div></section>
 
 <section id="quicklook"><div class="wrap split">
@@ -172,7 +172,7 @@ header.scrolled{box-shadow:0 8px 24px -16px rgba(40,30,15,.35)}
     <h2 class="reveal">Files and outline,<br>one keystroke away</h2>
     <p class="lead reveal">The outline button in the margin, or <kbd>⌘P</kbd>, opens a sidebar listing every Markdown file in the folder. Fuzzy-filter it, use the arrow keys and Return, or press <kbd>+</kbd> to create a new file next to the current one.</p>
   </div>
-  <img class="shot reveal" src="assets/sidebar.jpg" alt="Inkdown with the Files sidebar open" width="1600" height="1000">
+  <img class="shot reveal" src="assets/sidebar.jpg" alt="Parchly with the Files sidebar open" width="1600" height="1000">
 </div></section>
 
 <section id="shortcuts"><div class="wrap">
@@ -194,22 +194,22 @@ header.scrolled{box-shadow:0 8px 24px -16px rgba(40,30,15,.35)}
 
 <section id="install"><div class="wrap">
   <h2 class="reveal">Install in one line</h2>
-  <p class="lead reveal">Paste this into Terminal. It downloads the latest release, puts Inkdown in Applications, turns on Quick Look and opens the app.</p>
+  <p class="lead reveal">Paste this into Terminal. It downloads the latest release, puts Parchly in Applications, turns on Quick Look and opens the app.</p>
   <div class="cmd reveal">
-    <code id="cmd">curl -fsSL https://tapariapurv.github.io/inkdown/install.sh | bash</code>
+    <code id="cmd">curl -fsSL https://tapariapurv.github.io/parchly/install.sh | bash</code>
     <button class="copy sans" type="button" aria-label="Copy install command"><span class="c1">Copy</span><span class="c2" aria-hidden="true">Copied ✓</span></button>
   </div>
   <div class="steps">
-    <div class="card reveal"><h3>Prefer a download?</h3><p>Get the <a href="https://github.com/tapariapurv/inkdown/releases/latest/download/Inkdown.dmg">disk image</a>, open it and drag Inkdown into Applications.</p>
-      <a class="btn" style="margin-top:14px;display:inline-block" href="https://github.com/tapariapurv/inkdown/releases/latest/download/Inkdown.dmg">Download .dmg</a></div>
+    <div class="card reveal"><h3>Prefer a download?</h3><p>Get the <a href="https://github.com/tapariapurv/parchly/releases/latest/download/Parchly.dmg">disk image</a>, open it and drag Parchly into Applications.</p>
+      <a class="btn" style="margin-top:14px;display:inline-block" href="https://github.com/tapariapurv/parchly/releases/latest/download/Parchly.dmg">Download .dmg</a></div>
     <div class="card reveal"><h3>First launch from the DMG</h3><p>The app isn't notarized yet, so macOS blocks the first launch. Open <b>System Settings › Privacy &amp; Security</b>, click <b>Open Anyway</b>, and confirm. You only do this once. The Terminal install skips this step.</p></div>
-    <div class="card reveal"><h3>Make it the default</h3><p>Select any <code>.md</code> file in Finder, then choose <b>Get Info › Open with › Inkdown › Change All</b>. If another app handles Quick Look, pick Inkdown under <b>Login Items &amp; Extensions › Quick Look</b>.</p></div>
+    <div class="card reveal"><h3>Make it the default</h3><p>Select any <code>.md</code> file in Finder, then choose <b>Get Info › Open with › Parchly › Change All</b>. If another app handles Quick Look, pick Parchly under <b>Login Items &amp; Extensions › Quick Look</b>.</p></div>
   </div>
-  <p class="lead reveal" style="margin-top:28px">Requires macOS 14 Sonoma or later (Apple silicon or Intel). See <a href="https://github.com/tapariapurv/inkdown/releases">release notes</a> · <a href="https://github.com/tapariapurv/inkdown#build">build from source</a> · uninstall by dragging the app to the Trash.</p>
+  <p class="lead reveal" style="margin-top:28px">Requires macOS 14 Sonoma or later (Apple silicon or Intel). See <a href="https://github.com/tapariapurv/parchly/releases">release notes</a> · <a href="https://github.com/tapariapurv/parchly#build">build from source</a> · uninstall by dragging the app to the Trash.</p>
 </div></section>
 </main>
 
-<footer><div class="wrap">Inkdown · MIT licensed · <a href="https://github.com/tapariapurv/inkdown">Source on GitHub</a> · <a href="privacy.html">Privacy</a></div></footer>
+<footer><div class="wrap">Parchly · MIT licensed · <a href="https://github.com/tapariapurv/parchly">Source on GitHub</a> · <a href="privacy.html">Privacy</a></div></footer>
 
 <script>
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -260,7 +260,7 @@ copyBtn.addEventListener('click', async () => {
 // Live demo: type each line as Markdown, then let its syntax melt away.
 const lines = [
   { cls: 'h1', parts: [['mk', '# '], ['t', 'Launch notes']] },
-  { parts: [['t', 'Ship '], ['mk', '**'], ['b', 'Inkdown'], ['mk', '**'], ['t', ' with '], ['mk', '*'], ['i', 'Quick Look'], ['mk', '*'], ['t', '.']] },
+  { parts: [['t', 'Ship '], ['mk', '**'], ['b', 'Parchly'], ['mk', '**'], ['t', ' with '], ['mk', '*'], ['i', 'Quick Look'], ['mk', '*'], ['t', '.']] },
   { parts: [['mk', '- [x] '], ['box x', ''], ['t', 'Write the editor']] },
   { parts: [['mk', '- [ ] '], ['box', ''], ['t', 'Build the website']] },
   { cls: 'q', parts: [['mk', '> '], ['t', 'Simplicity is prerequisite for reliability.']] },

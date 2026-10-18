@@ -1,5 +1,5 @@
 #!/bin/bash
-# Builds Inkdown, packages Inkdown.zip + Inkdown.dmg, and publishes a GitHub release.
+# Builds Parchly, packages Parchly.zip + Parchly.dmg, and publishes a GitHub release.
 # Usage: scripts/release.sh 1.0.0        (release notes come from release-notes/v1.0.0.md)
 set -euo pipefail
 VERSION="${1:?usage: scripts/release.sh <version>}"
@@ -13,19 +13,19 @@ sed -i '' "s/CURRENT_PROJECT_VERSION: \".*\"/CURRENT_PROJECT_VERSION: \"$BUILD\"
 git commit -qm "Bump version to $VERSION ($BUILD)" project.yml || true
 git push -q origin HEAD:main
 xcodegen -q
-xcodebuild -project Inkdown.xcodeproj -scheme Inkdown -configuration Release \
+xcodebuild -project Parchly.xcodeproj -scheme Parchly -configuration Release \
   -derivedDataPath build/release -clonedSourcePackagesDirPath build/spm ARCHS="arm64 x86_64" ONLY_ACTIVE_ARCH=NO clean build -quiet
-APP=build/release/Build/Products/Release/Inkdown.app
+APP=build/release/Build/Products/Release/Parchly.app
 codesign --verify --deep --strict "$APP"
 
 OUT=build/dist; rm -rf "$OUT"; mkdir -p "$OUT/dmg"
-ditto -c -k --keepParent "$APP" "$OUT/Inkdown.zip"
+ditto -c -k --keepParent "$APP" "$OUT/Parchly.zip"
 cp -R "$APP" "$OUT/dmg/"
 ln -s /Applications "$OUT/dmg/Applications"
-hdiutil create -quiet -volname "Inkdown $VERSION" -srcfolder "$OUT/dmg" -ov -format UDZO "$OUT/Inkdown.dmg"
-(cd "$OUT" && shasum -a 256 Inkdown.zip Inkdown.dmg > SHA256SUMS.txt)
+hdiutil create -quiet -volname "Parchly $VERSION" -srcfolder "$OUT/dmg" -ov -format UDZO "$OUT/Parchly.dmg"
+(cd "$OUT" && shasum -a 256 Parchly.zip Parchly.dmg > SHA256SUMS.txt)
 
-git tag -a "v$VERSION" -m "Inkdown $VERSION" 2>/dev/null || true
+git tag -a "v$VERSION" -m "Parchly $VERSION" 2>/dev/null || true
 git push -q origin "v$VERSION"
-gh release create "v$VERSION" "$OUT/Inkdown.dmg" "$OUT/Inkdown.zip" "$OUT/SHA256SUMS.txt" \
-  --title "Inkdown $VERSION" --notes-file "$NOTES" --latest
+gh release create "v$VERSION" "$OUT/Parchly.dmg" "$OUT/Parchly.zip" "$OUT/SHA256SUMS.txt" \
+  --title "Parchly $VERSION" --notes-file "$NOTES" --latest
