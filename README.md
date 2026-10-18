@@ -86,6 +86,10 @@ pluginkit -e use -i com.purvt.InkdownQuickLook
 qlmanage -r
 ```
 
+## Mac App Store
+
+Inkdown runs in the App Sandbox and includes a privacy manifest (no data collected). The App Store listing (metadata, keywords, captioned screenshots, review notes) is in [`appstore/`](appstore/), along with [`scripts/appstore.sh`](scripts/appstore.sh) for archiving and uploading. Submitting requires a paid Apple Developer Program membership; see [appstore/README.md](appstore/README.md).
+
 ## Tests
 
 The editing rules (lists, renumbering, tables, toggles, code fences) are pure functions with a runnable self-check:
