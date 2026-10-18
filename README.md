@@ -9,6 +9,20 @@ The look follows [Downright](https://downright.cc). The goal is that every featu
 
 ![Inkdown in Document mode](docs/assets/document.jpg)
 
+## Install
+
+**One line.** Paste into Terminal:
+
+```sh
+curl -fsSL https://tapariapurv.github.io/inkdown/install.sh | bash
+```
+
+This downloads the [latest release](https://github.com/tapariapurv/inkdown/releases/latest), installs it into `/Applications`, turns on the Quick Look extension and opens the app. ([Read the script](docs/install.sh).)
+
+**Or** download [`Inkdown.dmg`](https://github.com/tapariapurv/inkdown/releases/latest/download/Inkdown.dmg) and drag the app into Applications. The build isn't notarized yet, so on first launch go to **System Settings › Privacy & Security › Open Anyway**.
+
+Requires macOS 14 Sonoma or later (Apple silicon or Intel). To uninstall, drag Inkdown to the Trash.
+
 ## Features
 
 - **Document mode**: syntax hides while you read and reappears on the line you're editing. Headings, bold/italic, code, links, bullets (•/◦), clickable task checkboxes, quote bars, rules and table grids all render inline. An `H1`–`H6` badge marks the caret's heading.
@@ -43,6 +57,14 @@ The look follows [Downright](https://downright.cc). The goal is that every featu
 All standard macOS text-editing shortcuts (word and line navigation, Emacs bindings, undo/redo) work too.
 
 ## Build
+
+Maintainers can cut a release (it builds, packages a DMG and zip, tags, and publishes with notes from `release-notes/vX.Y.Z.md`) with:
+
+```sh
+scripts/release.sh 1.0.1
+```
+
+To build from source yourself:
 
 Requires macOS 14+, Xcode 16+ and [XcodeGen](https://github.com/yonaskolb/XcodeGen).
 

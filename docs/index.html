@@ -75,6 +75,16 @@ header.scrolled{box-shadow:0 8px 24px -16px rgba(40,30,15,.35)}
 .tabs .ind{position:absolute;bottom:0;height:2px;background:var(--accent);border-radius:1px;transition:transform .3s var(--ease-out),width .3s var(--ease-out)}
 #mode-shot{transition:opacity .22s ease,filter .22s ease}
 #mode-shot.swap{opacity:0;filter:blur(4px)}
+/* install */
+.cmd{display:flex;align-items:center;gap:12px;background:var(--ink);color:var(--bg);border-radius:12px;padding:14px 14px 14px 20px;max-width:760px;box-shadow:0 24px 50px -30px rgba(40,30,15,.5)}
+.cmd code{flex:1;font:15px/1.5 ui-monospace,"SF Mono",Menlo,monospace;overflow-x:auto;white-space:nowrap}
+.copy{position:relative;flex:none;border:0;border-radius:9px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;background:color-mix(in srgb,var(--bg) 16%,transparent);color:var(--bg);transition:transform .12s var(--ease-out),background .2s}
+.copy:active{transform:scale(.96)}
+.copy .c2{position:absolute;inset:0;display:grid;place-items:center;opacity:0;transform:translateY(4px);transition:opacity .2s var(--ease-out),transform .2s var(--ease-out)}
+.copy .c1{transition:opacity .15s}
+.copy.done .c1{opacity:0}.copy.done .c2{opacity:1;transform:none}
+.copy.done{background:color-mix(in srgb,#34C759 55%,transparent)}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;margin-top:28px}
 /* live demo */
 .demo{background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:34px 40px;min-height:330px;box-shadow:0 30px 70px -36px rgba(40,30,15,.3);font-size:18px}
 .demo .bar{display:flex;gap:7px;margin:-14px 0 22px -18px}
@@ -109,7 +119,7 @@ header.scrolled{box-shadow:0 8px 24px -16px rgba(40,30,15,.35)}
   <img src="assets/icon-512.png" alt="Inkdown app icon" width="128" height="128" style="margin-bottom:16px">
   <h1>Markdown that reads like a page<br>and saves as plain text.</h1>
   <p>Inkdown is a native macOS app for writing, viewing and finding Markdown. Edit in a calm document view, and every <code>.md</code> file stays exactly as you typed it.</p>
-  <div class="cta"><a class="btn primary" href="#install">Download &amp; build</a><a class="btn" href="https://github.com/tapariapurv/inkdown">View on GitHub</a></div>
+  <div class="cta"><a class="btn primary" href="#install">Install Inkdown</a><a class="btn" href="https://github.com/tapariapurv/inkdown">View on GitHub</a></div>
   <div class="stage"><img class="shot" src="assets/document.jpg" alt="Inkdown editing a Markdown document in Document mode, with headings, task checkboxes, a numbered list, a quote and a table" width="1600" height="1000"></div>
 </div>
 
@@ -183,14 +193,19 @@ header.scrolled{box-shadow:0 8px 24px -16px rgba(40,30,15,.35)}
 </div></section>
 
 <section id="install"><div class="wrap">
-  <h2 class="reveal">Install</h2>
-  <p class="lead reveal">Inkdown needs macOS 14 or later. Build it from source with Xcode and XcodeGen.</p>
-<pre>brew install xcodegen
-git clone https://github.com/tapariapurv/inkdown.git &amp;&amp; cd inkdown
-xcodegen
-xcodebuild -scheme Inkdown -configuration Release -derivedDataPath build
-cp -R build/Build/Products/Release/Inkdown.app /Applications/</pre>
-  <p class="lead" style="margin-top:20px">If another app's Quick Look extension handles Markdown, choose Inkdown under System Settings › General › Login Items &amp; Extensions › Quick Look.</p>
+  <h2 class="reveal">Install in one line</h2>
+  <p class="lead reveal">Paste this into Terminal. It downloads the latest release, puts Inkdown in Applications, turns on Quick Look and opens the app.</p>
+  <div class="cmd reveal">
+    <code id="cmd">curl -fsSL https://tapariapurv.github.io/inkdown/install.sh | bash</code>
+    <button class="copy sans" type="button" aria-label="Copy install command"><span class="c1">Copy</span><span class="c2" aria-hidden="true">Copied ✓</span></button>
+  </div>
+  <div class="steps">
+    <div class="card reveal"><h3>Prefer a download?</h3><p>Get the <a href="https://github.com/tapariapurv/inkdown/releases/latest/download/Inkdown.dmg">disk image</a>, open it and drag Inkdown into Applications.</p>
+      <a class="btn" style="margin-top:14px;display:inline-block" href="https://github.com/tapariapurv/inkdown/releases/latest/download/Inkdown.dmg">Download .dmg</a></div>
+    <div class="card reveal"><h3>First launch from the DMG</h3><p>The app isn't notarized yet, so macOS blocks the first launch. Open <b>System Settings › Privacy &amp; Security</b>, click <b>Open Anyway</b>, and confirm. You only do this once. The Terminal install skips this step.</p></div>
+    <div class="card reveal"><h3>Make it the default</h3><p>Select any <code>.md</code> file in Finder, then choose <b>Get Info › Open with › Inkdown › Change All</b>. If another app handles Quick Look, pick Inkdown under <b>Login Items &amp; Extensions › Quick Look</b>.</p></div>
+  </div>
+  <p class="lead reveal" style="margin-top:28px">Requires macOS 14 Sonoma or later (Apple silicon or Intel). See <a href="https://github.com/tapariapurv/inkdown/releases">release notes</a> · <a href="https://github.com/tapariapurv/inkdown#build">build from source</a> · uninstall by dragging the app to the Trash.</p>
 </div></section>
 </main>
 
@@ -234,6 +249,13 @@ tabs.forEach(b => b.addEventListener('click', () => {
   setTimeout(() => next.decode().catch(() => {}).then(() => { modeShot.src = b.dataset.src; modeShot.classList.remove('swap'); }), reduce ? 0 : 200);
 }));
 moveInd(tabs[0]); addEventListener('resize', () => moveInd(tabs.find(t => t.getAttribute('aria-selected') === 'true')));
+
+// Copy button: confirm the copy for 1.6s (feedback the user could otherwise miss).
+const copyBtn = document.querySelector('.copy');
+copyBtn.addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText(document.getElementById('cmd').textContent); } catch { getSelection().selectAllChildren(document.getElementById('cmd')); return; }
+  copyBtn.classList.add('done'); clearTimeout(copyBtn.t); copyBtn.t = setTimeout(() => copyBtn.classList.remove('done'), 1600);
+});
 
 // Live demo: type each line as Markdown, then let its syntax melt away.
 const lines = [
