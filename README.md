@@ -1,3 +1,5 @@
+<img src="docs/assets/icon-512.png" width="128" alt="Inkdown icon">
+
 # Inkdown
 
 A calm, native Markdown editor for macOS: **edit, create, view and Quick Look** `.md` files.
