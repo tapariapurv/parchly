@@ -4,6 +4,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillFinishLaunching(_ notification: Notification) {
         NSWindow.allowsAutomaticWindowTabbing = true
         NSApp.mainMenu = buildMenu()
+        Theme.apply()
     }
 
     func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool { true }
@@ -54,6 +55,7 @@ private func buildMenu() -> NSMenu {
         item("Rename…", #selector(NSDocument.rename(_:))),
         item("Move To…", #selector(NSDocument.move(_:))),
         item("Revert to Saved", #selector(NSDocument.revertToSaved(_:))),
+        item("Reveal in Finder", #selector(wc.revealInFinder(_:)), "r", [.command, .option]),
         sep(),
         item("Export as HTML…", #selector(wc.exportHTML(_:))),
         item("Export as PDF…", #selector(wc.exportPDF(_:))),

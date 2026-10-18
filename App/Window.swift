@@ -108,24 +108,26 @@ final class WindowController: NSWindowController, NSWindowDelegate, NSToolbarDel
     private var sidebarItem: NSSplitViewItem!
     private var editorItem: NSSplitViewItem!
     private var previewItem: NSSplitViewItem!
-    private let modeControl = NSSegmentedControl(labels: ["Document", "Source"], trackingMode: .selectOne, target: nil, action: nil)
+    private let modeControl = ModeSwitch()
     private var source = UserDefaults.standard.bool(forKey: "source")
     private var showsPreview = UserDefaults.standard.bool(forKey: "preview")
     private var renderWork: DispatchWorkItem?
     private static let modeItem = NSToolbarItem.Identifier("mode")
     private static let previewItem = NSToolbarItem.Identifier("preview")
     private static let searchItem = NSToolbarItem.Identifier("search")
+    private static let moreItem = NSToolbarItem.Identifier("more")
 
     init() {
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1120, height: 760),
-                              styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
+                              styleMask: [.titled, .closable, .miniaturizable, .resizable],
                               backing: .buffered, defer: false)
         super.init(window: window)
         window.delegate = self
         window.tabbingMode = .preferred
         window.tabbingIdentifier = "InkdownDocument"
         window.minSize = NSSize(width: 520, height: 320)
-        window.backgroundColor = .paper
+        window.backgroundColor = .titleBand
+        window.titlebarSeparatorStyle = .shadow
 
         editor.loadViewIfNeeded()
         preview.loadViewIfNeeded()
@@ -154,6 +156,8 @@ final class WindowController: NSWindowController, NSWindowDelegate, NSToolbarDel
         preview.openLink = { [weak self] in self?.open(url: $0) }
         sidebar.open = { [weak self] in self?.open(url: $0) }
         sidebar.jump = { [weak self] in self?.editor.jump(to: $0) }
+        editor.onOutline = { [weak self] in self?.toggleOutline() }
+        modeControl.onChange = { [weak self] in self?.setSource($0 == 1) }
         sidebar.newFile = { [weak self] in self?.newFileInFolder() }
         sidebar.done = { [weak self] in self?.focusContent() }
         editor.setWysiwyg(!source)
@@ -202,11 +206,11 @@ final class WindowController: NSWindowController, NSWindowDelegate, NSToolbarDel
 
     private func applyLayout() {
         previewItem.isCollapsed = !showsPreview
-        modeControl.selectedSegment = source ? 1 : 0
+        modeControl.selected = source ? 1 : 0
         if showsPreview {
             split.view.layoutSubtreeIfNeeded()
-            let a = editor.view.frame, b = preview.view.frame
-            split.splitView.setPosition(a.minX + (b.maxX - a.minX) / 2, ofDividerAt: 1)
+            let left = sidebarItem.isCollapsed ? 0 : sidebarItem.viewController.view.frame.maxX + split.splitView.dividerThickness
+            split.splitView.setPosition((left + (split.splitView.bounds.width - left) / 2).rounded(), ofDividerAt: 1)
         }
     }
 
@@ -223,7 +227,18 @@ final class WindowController: NSWindowController, NSWindowDelegate, NSToolbarDel
     @objc func showDocument(_ sender: Any?) { setSource(false) }
     @objc func showSource(_ sender: Any?) { setSource(true) }
     @objc func toggleSource(_ sender: Any?) { setSource(!source) }
-    @objc private func modeClicked(_ sender: NSSegmentedControl) { setSource(sender.selectedSegment == 1) }
+    private func toggleOutline() {
+        if sidebarItem.isCollapsed { reveal(.outline) } else { sidebarItem.isCollapsed = true; focusContent() }
+    }
+
+    @objc func revealInFinder(_ sender: Any?) {
+        if let url = (document as? Document)?.fileURL { NSWorkspace.shared.activateFileViewerSelecting([url]) }
+    }
+
+    @objc func setTheme(_ sender: NSMenuItem) {
+        UserDefaults.standard.set(sender.tag, forKey: "theme")
+        Theme.apply()
+    }
     @objc func togglePreview(_ sender: Any?) {
         showsPreview.toggle()
         UserDefaults.standard.set(showsPreview, forKey: "preview")
@@ -255,6 +270,8 @@ final class WindowController: NSWindowController, NSWindowDelegate, NSToolbarDel
         case #selector(showDocument(_:)): item.state = source ? .off : .on
         case #selector(showSource(_:)): item.state = source ? .on : .off
         case #selector(togglePreview(_:)): item.state = showsPreview ? .on : .off
+        case #selector(setTheme(_:)): item.state = UserDefaults.standard.integer(forKey: "theme") == item.tag ? .on : .off
+        case #selector(revealInFinder(_:)): return (document as? Document)?.fileURL != nil
         default: break
         }
         return true
@@ -351,7 +368,7 @@ final class WindowController: NSWindowController, NSWindowDelegate, NSToolbarDel
     }
 
     func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        [.toggleSidebar, .sidebarTrackingSeparator, .flexibleSpace, Self.modeItem, .flexibleSpace, Self.previewItem, Self.searchItem]
+        [.flexibleSpace, Self.modeItem, .flexibleSpace, Self.searchItem, Self.previewItem, Self.moreItem]
     }
 
     func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
@@ -359,33 +376,111 @@ final class WindowController: NSWindowController, NSWindowDelegate, NSToolbarDel
     }
 
     func toolbar(_ toolbar: NSToolbar, itemForItemIdentifier id: NSToolbarItem.Identifier, willBeInsertedIntoToolbar flag: Bool) -> NSToolbarItem? {
-        let item = NSToolbarItem(itemIdentifier: id)
+        func button(_ symbol: String, _ label: String, _ tip: String, _ action: Selector) -> NSToolbarItem {
+            let item = NSToolbarItem(itemIdentifier: id)
+            item.image = NSImage(systemSymbolName: symbol, accessibilityDescription: label)
+            item.label = label
+            item.toolTip = tip
+            item.action = action
+            item.target = self
+            item.isBordered = true
+            return item
+        }
         switch id {
         case Self.modeItem:
-            modeControl.segmentStyle = .automatic
-            modeControl.selectedSegment = source ? 1 : 0
-            modeControl.target = self
-            modeControl.action = #selector(modeClicked(_:))
-            modeControl.setToolTip("Document  ⌃⌘1", forSegment: 0)
-            modeControl.setToolTip("Source  ⌃⌘2", forSegment: 1)
-            for i in 0..<2 { modeControl.setWidth(96, forSegment: i) }
+            let item = NSToolbarItem(itemIdentifier: id)
+            modeControl.selected = source ? 1 : 0
             item.view = modeControl
             item.label = "Mode"
-        case Self.previewItem:
-            item.image = NSImage(systemSymbolName: "rectangle.split.2x1", accessibilityDescription: "Preview")
-            item.label = "Preview"
-            item.toolTip = "Side-by-side preview  ⌘\\"
-            item.action = #selector(togglePreview(_:))
-            item.target = self
-        case Self.searchItem:
-            item.image = NSImage(systemSymbolName: "magnifyingglass", accessibilityDescription: "Find")
-            item.label = "Find"
-            item.toolTip = "Find  ⌘F"
-            item.action = #selector(find(_:))
-            item.target = self
+            return item
+        case Self.searchItem: return button("magnifyingglass", "Find", "Find  ⌘F", #selector(find(_:)))
+        case Self.previewItem: return button("rectangle.split.2x1", "Preview", "Side-by-side preview  ⌘\\", #selector(togglePreview(_:)))
+        case Self.moreItem:
+            let item = NSMenuToolbarItem(itemIdentifier: id)
+            item.image = NSImage(systemSymbolName: "ellipsis", accessibilityDescription: "More")
+            item.label = "More"
+            item.showsIndicator = false
+            let menu = NSMenu()
+            let theme = NSMenu()
+            for (i, t) in ["System", "Light", "Dark"].enumerated() {
+                let m = NSMenuItem(title: t, action: #selector(setTheme(_:)), keyEquivalent: ""); m.tag = i; theme.addItem(m)
+            }
+            let themeItem = NSMenuItem(title: "Theme", action: nil, keyEquivalent: ""); themeItem.submenu = theme
+            for (title, action) in [("Side-by-Side Preview", #selector(togglePreview(_:))), ("Files & Outline", #selector(quickOpen(_:))),
+                                    ("-", nil), ("Export as PDF…", #selector(exportPDF(_:))), ("Export as HTML…", #selector(exportHTML(_:))),
+                                    ("Print…", #selector(printMarkdown(_:))), ("Reveal in Finder", #selector(revealInFinder(_:))), ("-", nil)] as [(String, Selector?)] {
+                menu.addItem(title == "-" ? .separator() : NSMenuItem(title: title, action: action, keyEquivalent: ""))
+            }
+            menu.addItem(themeItem)
+            item.menu = menu
+            return item
         default:
             return nil
         }
-        return item
+    }
+}
+
+/// Downright-style "Document | Source" pill: plain labels, accent underline under the active one.
+final class ModeSwitch: NSView {
+    var onChange: (Int) -> Void = { _ in }
+    var selected = 0 { didSet { update() } }
+    private let buttons = ["Document", "Source"].map { NSButton(title: $0, target: nil, action: nil) }
+    private let underline = NSView()
+
+    init() {
+        super.init(frame: NSRect(x: 0, y: 0, width: 214, height: 34))
+        wantsLayer = true
+        layer?.cornerRadius = 12
+        layer?.borderWidth = 1
+        for (i, b) in buttons.enumerated() {
+            b.isBordered = false
+            b.tag = i
+            b.target = self
+            b.action = #selector(clicked(_:))
+            b.frame = NSRect(x: 8 + CGFloat(i) * 99, y: 4, width: 99, height: 26)
+            addSubview(b)
+        }
+        underline.wantsLayer = true
+        underline.layer?.cornerRadius = 1
+        addSubview(underline)
+        update()
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+    override var intrinsicContentSize: NSSize { NSSize(width: 214, height: 34) }
+
+    override func updateLayer() {
+        layer?.backgroundColor = NSColor.paper.withAlphaComponent(0.7).cgColor
+        layer?.borderColor = NSColor.rule.cgColor
+        underline.layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.8).cgColor
+    }
+    override var wantsUpdateLayer: Bool { true }
+
+    @objc private func clicked(_ b: NSButton) {
+        guard b.tag != selected else { return }
+        selected = b.tag
+        onChange(b.tag)
+    }
+
+    private func update() {
+        for (i, b) in buttons.enumerated() {
+            let on = i == selected
+            b.attributedTitle = NSAttributedString(string: b.title, attributes: [
+                .font: NSFont.systemFont(ofSize: 13, weight: on ? .semibold : .regular),
+                .foregroundColor: on ? NSColor.labelColor : NSColor.tertiaryLabelColor])
+        }
+        let b = buttons[selected].frame
+        underline.frame = NSRect(x: b.midX - 17, y: 5, width: 34, height: 2)
+        needsDisplay = true
+    }
+}
+
+enum Theme {
+    static func apply() {
+        switch UserDefaults.standard.integer(forKey: "theme") {
+        case 1: NSApp.appearance = NSAppearance(named: .aqua)
+        case 2: NSApp.appearance = NSAppearance(named: .darkAqua)
+        default: NSApp.appearance = nil
+        }
     }
 }
