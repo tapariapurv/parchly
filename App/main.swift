@@ -1,0 +1,147 @@
+import AppKit
+
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        NSWindow.allowsAutomaticWindowTabbing = true
+        NSApp.mainMenu = buildMenu()
+    }
+
+    func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool { true }
+}
+
+private func item(_ title: String, _ action: Selector?, _ key: String = "", _ mods: NSEvent.ModifierFlags = .command, tag: Int = 0) -> NSMenuItem {
+    let i = NSMenuItem(title: title, action: action, keyEquivalent: key)
+    i.keyEquivalentModifierMask = mods
+    i.tag = tag
+    return i
+}
+
+private func menu(_ title: String, _ items: [NSMenuItem]) -> NSMenuItem {
+    let m = NSMenu(title: title)
+    items.forEach(m.addItem)
+    let top = NSMenuItem(title: title, action: nil, keyEquivalent: "")
+    top.submenu = m
+    return top
+}
+
+private func key(_ scalar: Int) -> String { String(Character(UnicodeScalar(scalar)!)) }
+
+private func buildMenu() -> NSMenu {
+    let sep = { NSMenuItem.separator() }
+    let main = NSMenu()
+    let tv = MarkdownTextView.self, wc = WindowController.self
+
+    main.addItem(menu("Inkdown", [
+        item("About Inkdown", #selector(NSApplication.orderFrontStandardAboutPanel(_:)), ""),
+        sep(),
+        item("Hide Inkdown", #selector(NSApplication.hide(_:)), "h"),
+        item("Hide Others", #selector(NSApplication.hideOtherApplications(_:)), "h", [.command, .option]),
+        item("Show All", #selector(NSApplication.unhideAllApplications(_:))),
+        sep(),
+        item("Quit Inkdown", #selector(NSApplication.terminate(_:)), "q"),
+    ]))
+
+    let recent = menu("Open Recent", [item("Clear Menu", #selector(NSDocumentController.clearRecentDocuments(_:)))])
+    main.addItem(menu("File", [
+        item("New", #selector(NSDocumentController.newDocument(_:)), "n"),
+        item("Open…", #selector(NSDocumentController.openDocument(_:)), "o"),
+        recent,
+        item("Quick Open…", #selector(wc.quickOpen(_:)), "p"),
+        sep(),
+        item("Close", #selector(NSWindow.performClose(_:)), "w"),
+        item("Save…", #selector(NSDocument.save(_:)), "s"),
+        item("Duplicate", #selector(NSDocument.duplicate(_:)), "s", [.command, .shift]),
+        item("Rename…", #selector(NSDocument.rename(_:))),
+        item("Move To…", #selector(NSDocument.move(_:))),
+        item("Revert to Saved", #selector(NSDocument.revertToSaved(_:))),
+        sep(),
+        item("Export as HTML…", #selector(wc.exportHTML(_:))),
+        item("Export as PDF…", #selector(wc.exportPDF(_:))),
+        item("Print…", #selector(wc.printMarkdown(_:)), "p", [.command, .option]),
+    ]))
+
+    main.addItem(menu("Edit", [
+        item("Undo", Selector(("undo:")), "z"),
+        item("Redo", Selector(("redo:")), "z", [.command, .shift]),
+        sep(),
+        item("Cut", #selector(NSText.cut(_:)), "x"),
+        item("Copy", #selector(NSText.copy(_:)), "c"),
+        item("Paste", #selector(NSText.paste(_:)), "v"),
+        item("Delete", #selector(NSText.delete(_:))),
+        item("Select All", #selector(NSText.selectAll(_:)), "a"),
+        sep(),
+        menu("Find", [
+            item("Find…", #selector(NSTextView.performFindPanelAction(_:)), "f", tag: 1),
+            item("Find and Replace…", #selector(NSTextView.performFindPanelAction(_:)), "f", [.command, .option], tag: 12),
+            item("Find Next", #selector(NSTextView.performFindPanelAction(_:)), "g", tag: 2),
+            item("Find Previous", #selector(NSTextView.performFindPanelAction(_:)), "g", [.command, .shift], tag: 3),
+            item("Use Selection for Find", #selector(NSTextView.performFindPanelAction(_:)), "e", tag: 7),
+            item("Jump to Selection", #selector(NSTextView.centerSelectionInVisibleArea(_:)), "j"),
+        ]),
+        menu("Spelling", [
+            item("Show Spelling and Grammar", #selector(NSText.showGuessPanel(_:)), ":"),
+            item("Check Document Now", #selector(NSText.checkSpelling(_:)), ";"),
+            item("Check Spelling While Typing", #selector(NSTextView.toggleContinuousSpellChecking(_:))),
+        ]),
+        sep(),
+        item("Move Line Up", #selector(tv.moveLineUp(_:)), key(NSUpArrowFunctionKey), [.command, .control]),
+        item("Move Line Down", #selector(tv.moveLineDown(_:)), key(NSDownArrowFunctionKey), [.command, .control]),
+        item("Duplicate Line", #selector(tv.duplicateLine(_:)), "d", [.command, .shift]),
+    ]))
+
+    var headings = (1...6).map { item("Heading \($0)", #selector(tv.setHeading(_:)), "\($0)", tag: $0) }
+    headings.append(item("Body Text", #selector(tv.setHeading(_:)), "0", tag: 0))
+    main.addItem(menu("Format", [
+        item("Bold", #selector(tv.toggleBold(_:)), "b"),
+        item("Italic", #selector(tv.toggleItalic(_:)), "i"),
+        item("Strikethrough", #selector(tv.toggleStrike(_:)), "x", [.command, .shift]),
+        item("Inline Code", #selector(tv.toggleInlineCode(_:)), "`", .control),
+        item("Link", #selector(tv.insertLink(_:)), "k"),
+        sep(),
+    ] + headings + [
+        sep(),
+        item("Bulleted List", #selector(tv.toggleBullets(_:)), "8", [.command, .shift]),
+        item("Numbered List", #selector(tv.toggleNumbers(_:)), "7", [.command, .shift]),
+        item("Task List", #selector(tv.toggleTasks(_:)), "9", [.command, .shift]),
+        item("Toggle Task Done", #selector(tv.toggleTaskDone(_:)), "l"),
+        item("Quote", #selector(tv.toggleQuote(_:)), "q", [.command, .option]),
+        item("Code Block", #selector(tv.insertCodeBlock(_:)), "c", [.command, .option]),
+        item("Table", #selector(tv.insertTable(_:)), "t", [.command, .option]),
+        sep(),
+        item("Indent", #selector(tv.indentLines(_:)), "]"),
+        item("Outdent", #selector(tv.outdentLines(_:)), "["),
+    ]))
+
+    main.addItem(menu("View", [
+        item("Document", #selector(wc.showDocument(_:)), "1", [.command, .control]),
+        item("Source", #selector(wc.showSource(_:)), "2", [.command, .control]),
+        item("Toggle Source", #selector(wc.toggleSource(_:)), "e", [.command, .shift]),
+        item("Side-by-Side Preview", #selector(wc.togglePreview(_:)), "\\"),
+        sep(),
+        item("Toggle Sidebar", #selector(NSSplitViewController.toggleSidebar(_:)), "s", [.command, .control]),
+        item("Go to File…", #selector(wc.quickOpen(_:)), "p"),
+        item("Go to Heading…", #selector(wc.goToHeading(_:)), "o", [.command, .shift]),
+        sep(),
+        item("Bigger", #selector(wc.biggerFont(_:)), "="),
+        item("Smaller", #selector(wc.smallerFont(_:)), "-"),
+        item("Actual Size", #selector(wc.actualSizeFont(_:)), "0", [.command, .option]),
+        sep(),
+    ]))
+
+    let window = menu("Window", [
+        item("Minimize", #selector(NSWindow.performMiniaturize(_:)), "m"),
+        item("Zoom", #selector(NSWindow.performZoom(_:))),
+        sep(),
+        item("Bring All to Front", #selector(NSApplication.arrangeInFront(_:))),
+    ])
+    main.addItem(window)
+    NSApp.windowsMenu = window.submenu
+    let help = menu("Help", [])
+    main.addItem(help)
+    NSApp.helpMenu = help.submenu
+    return main
+}
+
+let delegate = AppDelegate()
+NSApplication.shared.delegate = delegate
+_ = NSApplicationMain(CommandLine.argc, CommandLine.unsafeArgv)
