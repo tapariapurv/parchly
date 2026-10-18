@@ -58,6 +58,7 @@ final class PreviewController: NSViewController, WKNavigationDelegate {
     private func reload() {
         loaded = false
         let page = Renderer.page("").replacingOccurrences(of: "<article id=\"c\"></article>", with: "<article id=\"c\">\(html)</article>")
+            .replacingOccurrences(of: "</head>", with: "<style id=\"theme\">\(Self.themeCSS)</style></head>")
         web.loadHTMLString(page, baseURL: base.map(LocalFiles.url) ?? URL(string: "\(LocalFiles.scheme):///")!)
     }
 
@@ -65,6 +66,14 @@ final class PreviewController: NSViewController, WKNavigationDelegate {
         html = Renderer.html(markdown)
         guard loaded else { then?(); return }
         web.evaluateJavaScript("document.getElementById('c').innerHTML = \(Self.js(html))", in: nil, in: .defaultClient) { _ in then?() }
+    }
+
+    /// Fixed themes override the page's light/dark palette; Paper (Auto) uses the built-in CSS.
+    static var themeCSS: String { Theme.all.contains { $0.id == Theme.id } ? Theme.current.css : "" }
+
+    func applyTheme() {
+        guard loaded else { return }
+        web.evaluateJavaScript("document.getElementById('theme').textContent = \(Self.js(Self.themeCSS))", in: nil, in: .defaultClient) { _ in }
     }
 
     func scroll(to fraction: CGFloat) {
@@ -101,7 +110,7 @@ final class PreviewController: NSViewController, WKNavigationDelegate {
 /// Serves local files (images next to the document) to the preview from the app process, which holds
 /// the sandbox permission for the document and any granted folders.
 final class LocalFiles: NSObject, WKURLSchemeHandler {
-    static let scheme = "inkdown-file"
+    static let scheme = "parchly-file"
     static func url(_ dir: URL) -> URL { URL(string: "\(scheme)://" + (dir.path.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? "") + "/")! }
 
     func webView(_ webView: WKWebView, start task: WKURLSchemeTask) {
@@ -135,6 +144,7 @@ final class WindowController: NSWindowController, NSWindowDelegate, NSToolbarDel
     private static let previewItem = NSToolbarItem.Identifier("preview")
     private static let searchItem = NSToolbarItem.Identifier("search")
     private static let moreItem = NSToolbarItem.Identifier("more")
+    private static let formatItem = NSToolbarItem.Identifier("format")
 
     init() {
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1120, height: 760),
@@ -143,7 +153,7 @@ final class WindowController: NSWindowController, NSWindowDelegate, NSToolbarDel
         super.init(window: window)
         window.delegate = self
         window.tabbingMode = .preferred
-        window.tabbingIdentifier = "InkdownDocument"
+        window.tabbingIdentifier = "ParchlyDocument"
         window.minSize = NSSize(width: 520, height: 320)
         window.backgroundColor = .titleBand
         window.titlebarSeparatorStyle = .shadow
@@ -160,9 +170,9 @@ final class WindowController: NSWindowController, NSWindowDelegate, NSToolbarDel
         split.splitViewItems = [sidebarItem, editorItem, previewItem]
         window.contentViewController = split
         window.setContentSize(NSSize(width: 1120, height: 760))
-        if !window.setFrameUsingName("InkdownWindow") { window.center() }
+        if !window.setFrameUsingName("ParchlyWindow") { window.center() }
 
-        let toolbar = NSToolbar(identifier: "InkdownToolbar")
+        let toolbar = NSToolbar(identifier: "ParchlyToolbar")
         toolbar.delegate = self
         toolbar.displayMode = .iconOnly
         toolbar.centeredItemIdentifiers = [Self.modeItem]
@@ -176,6 +186,7 @@ final class WindowController: NSWindowController, NSWindowDelegate, NSToolbarDel
         sidebar.open = { [weak self] in self?.open(url: $0) }
         sidebar.jump = { [weak self] in self?.editor.jump(to: $0) }
         editor.onOutline = { [weak self] in self?.toggleOutline() }
+        NotificationCenter.default.addObserver(self, selector: #selector(themeChanged), name: Theme.changed, object: nil)
         modeControl.onChange = { [weak self] in self?.setSource($0 == 1) }
         sidebar.newFile = { [weak self] in self?.newFileInFolder() }
         sidebar.grant = { [weak self] in self?.grantFolderAccess() }
@@ -255,9 +266,16 @@ final class WindowController: NSWindowController, NSWindowDelegate, NSToolbarDel
         if let url = (document as? Document)?.fileURL { NSWorkspace.shared.activateFileViewerSelecting([url]) }
     }
 
-    @objc func setTheme(_ sender: NSMenuItem) {
-        UserDefaults.standard.set(sender.tag, forKey: "theme")
-        Theme.apply()
+    @objc func toggleFormatBar(_ sender: Any?) { Settings.formatBar.toggle() }
+
+    @objc func setTheme(_ sender: NSMenuItem) { Theme.id = Theme.choices[sender.tag].id }
+
+    @objc private func themeChanged() {
+        window?.backgroundColor = .titleBand
+        editor.textView.needsDisplay = true
+        editor.view.subviews.forEach { $0.needsDisplay = true }
+        modeControl.needsDisplay = true
+        preview.applyTheme()
     }
     @objc func togglePreview(_ sender: Any?) {
         showsPreview.toggle()
@@ -290,7 +308,8 @@ final class WindowController: NSWindowController, NSWindowDelegate, NSToolbarDel
         case #selector(showDocument(_:)): item.state = source ? .off : .on
         case #selector(showSource(_:)): item.state = source ? .on : .off
         case #selector(togglePreview(_:)): item.state = showsPreview ? .on : .off
-        case #selector(setTheme(_:)): item.state = UserDefaults.standard.integer(forKey: "theme") == item.tag ? .on : .off
+        case #selector(toggleFormatBar(_:)): item.state = Settings.formatBar ? .on : .off
+        case #selector(setTheme(_:)): item.state = Theme.id == Theme.choices[item.tag].id ? .on : .off
         case #selector(revealInFinder(_:)): return (document as? Document)?.fileURL != nil
         default: break
         }
@@ -315,7 +334,7 @@ final class WindowController: NSWindowController, NSWindowDelegate, NSToolbarDel
         panel.canChooseFiles = false
         panel.directoryURL = root
         panel.prompt = "Allow Access"
-        panel.message = "Inkdown needs access to this folder to list its Markdown files, open links and show images."
+        panel.message = "Parchly needs access to this folder to list its Markdown files, open links and show images."
         panel.beginSheetModal(for: window) { [weak self] r in
             guard r == .OK, let url = panel.url, let self else { return }
             FolderAccess.add(url)
@@ -405,12 +424,12 @@ final class WindowController: NSWindowController, NSWindowDelegate, NSToolbarDel
     func windowDidBecomeKey(_ notification: Notification) { sidebar.reload() }
 
     func windowWillClose(_ notification: Notification) {
-        window?.saveFrame(usingName: "InkdownWindow")
+        window?.saveFrame(usingName: "ParchlyWindow")
         UserDefaults.standard.set(!sidebarItem.isCollapsed, forKey: "sidebarShown")
     }
 
     func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        [.flexibleSpace, Self.modeItem, .flexibleSpace, Self.searchItem, Self.previewItem, Self.moreItem]
+        [.flexibleSpace, Self.modeItem, .flexibleSpace, Self.formatItem, Self.searchItem, Self.previewItem, Self.moreItem]
     }
 
     func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
@@ -432,9 +451,10 @@ final class WindowController: NSWindowController, NSWindowDelegate, NSToolbarDel
         case Self.modeItem:
             let item = NSToolbarItem(itemIdentifier: id)
             modeControl.selected = source ? 1 : 0
-            item.view = modeControl
+            item.view = glass(modeControl, cornerRadius: 13)
             item.label = "Mode"
             return item
+        case Self.formatItem: return button("textformat", "Format", "Show or hide the formatting bar", #selector(toggleFormatBar(_:)))
         case Self.searchItem: return button("magnifyingglass", "Find", "Find  ⌘F", #selector(find(_:)))
         case Self.previewItem: return button("rectangle.split.2x1", "Preview", "Side-by-side preview  ⌘\\", #selector(togglePreview(_:)))
         case Self.moreItem:
@@ -444,8 +464,8 @@ final class WindowController: NSWindowController, NSWindowDelegate, NSToolbarDel
             item.showsIndicator = false
             let menu = NSMenu()
             let theme = NSMenu()
-            for (i, t) in ["System", "Light", "Dark"].enumerated() {
-                let m = NSMenuItem(title: t, action: #selector(setTheme(_:)), keyEquivalent: ""); m.tag = i; theme.addItem(m)
+            for (i, t) in Theme.choices.enumerated() {
+                let m = NSMenuItem(title: t.name, action: #selector(setTheme(_:)), keyEquivalent: ""); m.tag = i; theme.addItem(m)
             }
             let themeItem = NSMenuItem(title: "Theme", action: nil, keyEquivalent: ""); themeItem.submenu = theme
             for (title, action) in [("Side-by-Side Preview", #selector(togglePreview(_:))), ("Files & Outline", #selector(quickOpen(_:))),
@@ -454,6 +474,9 @@ final class WindowController: NSWindowController, NSWindowDelegate, NSToolbarDel
                 menu.addItem(title == "-" ? .separator() : NSMenuItem(title: title, action: action, keyEquivalent: ""))
             }
             menu.addItem(themeItem)
+            menu.addItem(.separator())
+            menu.addItem(NSMenuItem(title: "Check for Updates…", action: #selector(AppDelegate.checkForUpdates(_:)), keyEquivalent: ""))
+            menu.addItem(NSMenuItem(title: "Settings…", action: #selector(AppDelegate.showSettings(_:)), keyEquivalent: ""))
             item.menu = menu
             return item
         default:
@@ -492,9 +515,11 @@ final class ModeSwitch: NSView {
     override var intrinsicContentSize: NSSize { NSSize(width: 214, height: 34) }
 
     override func updateLayer() {
-        layer?.backgroundColor = NSColor.paper.withAlphaComponent(0.7).cgColor
-        layer?.borderColor = NSColor.rule.cgColor
-        underline.layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.8).cgColor
+        let glassy: Bool
+        if #available(macOS 26.0, *) { glassy = true } else { glassy = false }
+        layer?.backgroundColor = glassy ? NSColor.clear.cgColor : NSColor.surface.cgColor
+        layer?.borderColor = glassy ? NSColor.clear.cgColor : NSColor.rule.cgColor
+        underline.layer?.backgroundColor = NSColor.accent.withAlphaComponent(0.8).cgColor
     }
     override var wantsUpdateLayer: Bool { true }
 
@@ -517,12 +542,3 @@ final class ModeSwitch: NSView {
     }
 }
 
-enum Theme {
-    static func apply() {
-        switch UserDefaults.standard.integer(forKey: "theme") {
-        case 1: NSApp.appearance = NSAppearance(named: .aqua)
-        case 2: NSApp.appearance = NSAppearance(named: .darkAqua)
-        default: NSApp.appearance = nil
-        }
-    }
-}

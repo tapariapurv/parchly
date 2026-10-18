@@ -1,6 +1,14 @@
 import AppKit
+import Sparkle
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    /// Sparkle: checks the appcast daily and installs signed updates (works inside the sandbox via its installer service).
+    let updater = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
+    private lazy var settings = SettingsWindowController(updater: updater.updater)
+
+    @objc func showSettings(_ sender: Any?) { settings.showWindow(nil); settings.window?.makeKeyAndOrderFront(nil) }
+    @objc func checkForUpdates(_ sender: Any?) { updater.checkForUpdates(sender) }
+
     func applicationWillFinishLaunching(_ notification: Notification) {
         NSWindow.allowsAutomaticWindowTabbing = true
         NSApp.mainMenu = buildMenu()
@@ -33,14 +41,17 @@ private func buildMenu() -> NSMenu {
     let main = NSMenu()
     let tv = MarkdownTextView.self, wc = WindowController.self
 
-    main.addItem(menu("Inkdown", [
-        item("About Inkdown", #selector(NSApplication.orderFrontStandardAboutPanel(_:)), ""),
+    main.addItem(menu("Parchly", [
+        item("About Parchly", #selector(NSApplication.orderFrontStandardAboutPanel(_:)), ""),
+        item("Check for Updates…", #selector(AppDelegate.checkForUpdates(_:))),
         sep(),
-        item("Hide Inkdown", #selector(NSApplication.hide(_:)), "h"),
+        item("Settings…", #selector(AppDelegate.showSettings(_:)), ","),
+        sep(),
+        item("Hide Parchly", #selector(NSApplication.hide(_:)), "h"),
         item("Hide Others", #selector(NSApplication.hideOtherApplications(_:)), "h", [.command, .option]),
         item("Show All", #selector(NSApplication.unhideAllApplications(_:))),
         sep(),
-        item("Quit Inkdown", #selector(NSApplication.terminate(_:)), "q"),
+        item("Quit Parchly", #selector(NSApplication.terminate(_:)), "q"),
     ]))
 
     let recent = menu("Open Recent", [item("Clear Menu", #selector(NSDocumentController.clearRecentDocuments(_:)))])
@@ -120,6 +131,7 @@ private func buildMenu() -> NSMenu {
         item("Source", #selector(wc.showSource(_:)), "2", [.command, .control]),
         item("Toggle Source", #selector(wc.toggleSource(_:)), "e", [.command, .shift]),
         item("Side-by-Side Preview", #selector(wc.togglePreview(_:)), "\\"),
+        item("Formatting Bar", #selector(wc.toggleFormatBar(_:)), "b", [.command, .shift]),
         sep(),
         item("Toggle Sidebar", #selector(NSSplitViewController.toggleSidebar(_:)), "s", [.command, .control]),
         item("Go to File…", #selector(wc.quickOpen(_:)), "p"),

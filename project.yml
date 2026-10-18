@@ -1,9 +1,12 @@
-name: Inkdown
+name: Parchly
 options:
   bundleIdPrefix: com.purvt
   deploymentTarget:
     macOS: "14.0"
 packages:
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    from: 2.6.0
   cmark:
     url: https://github.com/swiftlang/swift-cmark.git
     branch: gfm
@@ -16,7 +19,7 @@ settings:
     CODE_SIGN_STYLE: Automatic
     ENABLE_HARDENED_RUNTIME: YES
 targets:
-  Inkdown:
+  Parchly:
     type: application
     platform: macOS
     sources: [App, Shared]
@@ -25,27 +28,37 @@ targets:
         product: cmark-gfm
       - package: cmark
         product: cmark-gfm-extensions
-      - target: InkdownQuickLook
+      - package: Sparkle
+      - target: ParchlyQuickLook
     entitlements:
-      path: App/Inkdown.entitlements
+      path: App/Parchly.entitlements
       properties:
         com.apple.security.app-sandbox: true
         com.apple.security.files.user-selected.read-write: true
         com.apple.security.files.bookmarks.app-scope: true
         com.apple.security.print: true
+        com.apple.security.temporary-exception.mach-lookup.global-name:   # Sparkle's sandboxed installer
+          - $(PRODUCT_BUNDLE_IDENTIFIER)-spks
+          - $(PRODUCT_BUNDLE_IDENTIFIER)-spki
         com.apple.security.network.client: true   # WKWebView preview processes need it; the app makes no network requests
     settings:
       base:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        PRODUCT_BUNDLE_IDENTIFIER: com.purvt.Inkdown
+        PRODUCT_BUNDLE_IDENTIFIER: com.purvt.Parchly
     info:
       path: App/Info.plist
       properties:
-        CFBundleDisplayName: Inkdown
+        CFBundleDisplayName: Parchly
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         NSHumanReadableCopyright: © 2026 Purv Taparia. MIT License.
         ITSAppUsesNonExemptEncryption: false
+        SUFeedURL: https://tapariapurv.github.io/parchly/appcast.xml
+        SUPublicEDKey: DJtlLIHsKEN7cXhigcGcQjnpWfDtW28rsyTqZlv6//o=
+        SUEnableInstallerLauncherService: true
+        SUEnableAutomaticChecks: true
+        SUAutomaticallyUpdate: true
+        SUScheduledCheckInterval: 86400
         NSPrincipalClass: NSApplication
         LSApplicationCategoryType: public.app-category.productivity
         CFBundleDocumentTypes:
@@ -62,7 +75,7 @@ targets:
             UTTypeTagSpecification:
               public.filename-extension: [md, markdown, mdown, mkd, mkdn, mdwn]
               public.mime-type: [text/markdown]
-  InkdownQuickLook:
+  ParchlyQuickLook:
     type: app-extension
     platform: macOS
     sources: [QuickLook, Shared]
@@ -80,7 +93,7 @@ targets:
     info:
       path: QuickLook/Info.plist
       properties:
-        CFBundleDisplayName: Inkdown Quick Look
+        CFBundleDisplayName: Parchly Quick Look
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         NSExtension:

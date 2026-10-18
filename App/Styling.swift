@@ -9,20 +9,7 @@ extension NSAttributedString.Key {
     static let mdHeading = NSAttributedString.Key("mdHeading")   // heading level, for the margin badge
     static let mdTableRow = NSAttributedString.Key("mdTableRow") // 1 header, 2 separator, 3 body
     static let mdPipe = NSAttributedString.Key("mdPipe")
-}
-
-extension NSColor {
-    static let paper = NSColor(name: nil) { $0.isDark ? NSColor(srgbRed: 0.118, green: 0.114, blue: 0.11, alpha: 1) : NSColor(srgbRed: 0.961, green: 0.953, blue: 0.937, alpha: 1) }
-    static let ink = NSColor(name: nil) { $0.isDark ? NSColor(srgbRed: 0.91, green: 0.89, blue: 0.86, alpha: 1) : NSColor(srgbRed: 0.11, green: 0.1, blue: 0.09, alpha: 1) }
-    static let codeFill = NSColor(name: nil) { $0.isDark ? NSColor(white: 1, alpha: 0.06) : NSColor(srgbRed: 0.45, green: 0.36, blue: 0.2, alpha: 0.07) }
-    static let rule = NSColor(name: nil) { $0.isDark ? NSColor(white: 1, alpha: 0.14) : NSColor(srgbRed: 0.3, green: 0.24, blue: 0.15, alpha: 0.16) }
-    static let quoteBar = NSColor(name: nil) { $0.isDark ? NSColor(srgbRed: 0.6, green: 0.5, blue: 0.36, alpha: 0.7) : NSColor(srgbRed: 0.72, green: 0.6, blue: 0.43, alpha: 0.8) }
-    static let syntax = NSColor.tertiaryLabelColor
-    static let titleBand = NSColor(name: nil) { $0.isDark ? NSColor(srgbRed: 0.15, green: 0.145, blue: 0.14, alpha: 1) : NSColor(srgbRed: 0.925, green: 0.918, blue: 0.902, alpha: 1) }
-}
-
-extension NSAppearance {
-    var isDark: Bool { bestMatch(from: [.aqua, .darkAqua]) == .darkAqua }
+    static let mdInlineCode = NSAttributedString.Key("mdInlineCode")   // drawn as a rounded pill
 }
 
 /// Live Markdown styling of the source text.
@@ -40,7 +27,7 @@ final class Styler {
     }
     var body: NSFont { wysiwyg ? serif(fontSize) : .monospacedSystemFont(ofSize: fontSize * 0.9, weight: .regular) }
     private var mono: NSFont { .monospacedSystemFont(ofSize: fontSize * 0.84, weight: .regular) }
-    private var lineSpacing: CGFloat { fontSize * (wysiwyg ? 0.62 : 0.6) }
+    private var lineSpacing: CGFloat { fontSize * (wysiwyg ? 0.72 : 0.6) }
 
     private static let headingRE = try! NSRegularExpression(pattern: #"^ {0,3}(#{1,6})(?:[ \t]+|$)"#)
     private static let quoteRE = try! NSRegularExpression(pattern: #"^ {0,3}>[ \t]?"#)
@@ -176,22 +163,26 @@ final class Styler {
 
         if doc, !reveal, !inCode(r.location), text.trimmingCharacters(in: .whitespaces).isEmpty {
             // Blank lines read as paragraph spacing, like a rendered page.
-            s.addAttributes([.font: NSFont.systemFont(ofSize: fontSize * 0.45), .paragraphStyle: paragraph { $0.lineSpacing = 0; $0.maximumLineHeight = self.fontSize * 0.55 }], range: full)
+            s.addAttributes([.font: NSFont.systemFont(ofSize: fontSize * 0.45), .paragraphStyle: paragraph { $0.lineSpacing = 0; $0.maximumLineHeight = self.fontSize * 0.95 }], range: full)
             return
         }
         if inCode(r.location) {
             s.addAttributes([.font: mono, .mdBlock: 1, .paragraphStyle: paragraph { $0.firstLineHeadIndent = pad; $0.headIndent = pad; $0.tailIndent = -pad; $0.lineSpacing = self.fontSize * 0.32 }], range: full)
-            if MD.fenceRE.firstMatch(in: text, range: MD.full(text)) != nil { s.addAttribute(.foregroundColor, value: NSColor.syntax, range: r) }
+            if MD.fenceRE.firstMatch(in: text, range: MD.full(text)) != nil {
+                s.addAttribute(.foregroundColor, value: NSColor.syntax, range: r)
+            } else {
+                for (t, kind) in Highlighter.tokens(in: ns, range: r) { s.addAttribute(.foregroundColor, value: NSColor.code(kind.rawValue), range: t) }
+            }
             return
         }
         if let m = Self.headingRE.firstMatch(in: text, range: MD.full(text)) {
             let level = m.range(at: 1).length
-            let scale: [CGFloat] = [1.9, 1.5, 1.25, 1.1, 1, 1]
+            let scale: [CGFloat] = [2.0, 1.56, 1.25, 1.1, 1, 1]
             let size = fontSize * scale[level - 1]
             if doc {
-                s.addAttributes([.font: serif(size, .bold), .mdHeading: level, .paragraphStyle: paragraph { $0.paragraphSpacingBefore = self.fontSize * (level <= 2 ? 1.1 : 0.6) }], range: full)
+                s.addAttributes([.font: serif(size, .bold), .foregroundColor: NSColor.heading, .mdHeading: level, .paragraphStyle: paragraph { $0.paragraphSpacingBefore = self.fontSize * (level <= 2 ? 1.6 : 0.9); $0.paragraphSpacing = self.fontSize * 0.2 }], range: full)
             }
-            if level == 6 { s.addAttribute(.foregroundColor, value: NSColor.secondaryLabelColor, range: r) }
+            if level == 6 { s.addAttribute(.foregroundColor, value: NSColor.inkSecondary, range: r) }
             hide(NSRange(location: r.location, length: m.range.length))
             inline(s, ns, NSRange(location: r.location + m.range.length, length: r.length - m.range.length), reveal: reveal)
             return
@@ -249,7 +240,7 @@ final class Styler {
             let markerRange = NSRange(location: r.location + indentLen, length: (p.marker as NSString).length)
             let prefix = NSRange(location: r.location, length: p.length)
             var visible = ns.substring(with: prefix)
-            s.addAttribute(.foregroundColor, value: NSColor.secondaryLabelColor, range: prefix)
+            s.addAttribute(.foregroundColor, value: NSColor.marker, range: prefix)
             if p.task != nil {
                 let boxAt = (text as NSString).range(of: "[", range: NSRange(location: indentLen, length: p.length - indentLen)).location
                 let box = NSRange(location: r.location + boxAt, length: 3)
@@ -259,19 +250,24 @@ final class Styler {
                     s.addAttribute(.mdHide, value: true, range: NSRange(location: box.location + 1, length: 1))
                     visible = p.indent + "[ ] "
                 } else {
-                    s.addAttribute(.foregroundColor, value: NSColor.controlAccentColor, range: prefix)
+                    s.addAttribute(.foregroundColor, value: NSColor.accent, range: prefix)
                 }
                 if p.task == true {
                     let rest = NSRange(location: prefix.upperBound, length: r.length - p.length)
-                    s.addAttributes([.foregroundColor: NSColor.secondaryLabelColor, .strikethroughStyle: NSUnderlineStyle.single.rawValue], range: rest)
+                    s.addAttributes([.foregroundColor: NSColor.inkSecondary, .strikethroughStyle: NSUnderlineStyle.single.rawValue], range: rest)
                 }
+            } else if p.number != nil, doc {
+                // Downright sets list numbers in small grey sans-serif.
+                s.addAttributes([.font: NSFont.systemFont(ofSize: fontSize * 0.88), .kern: fontSize * 0.2], range: markerRange)
+                visible = p.indent + p.marker + "  "
             } else if p.number == nil, doc {
                 s.addAttribute(.mdBullet, value: MD.width(p.indent) / 4, range: markerRange)
                 visible = p.indent + "•  "
                 s.addAttribute(.kern, value: fontSize * 0.25, range: markerRange)
             }
-            let hang = (visible as NSString).size(withAttributes: [.font: body]).width + (p.number == nil && p.task == nil && doc ? fontSize * 0.25 : 0)
-            s.addAttribute(.paragraphStyle, value: paragraph { $0.headIndent = hang; $0.paragraphSpacingBefore = 1 }, range: full)
+            let markerFont = p.number != nil && doc ? NSFont.systemFont(ofSize: fontSize * 0.88) : body
+            let hang = (visible as NSString).size(withAttributes: [.font: markerFont]).width + (p.task == nil && doc ? fontSize * 0.2 : 0)
+            s.addAttribute(.paragraphStyle, value: paragraph { $0.headIndent = hang; $0.paragraphSpacingBefore = self.fontSize * 0.28 }, range: full)
             inline(s, ns, NSRange(location: prefix.upperBound, length: r.length - p.length), reveal: reveal)
             return
         }
@@ -289,7 +285,7 @@ final class Styler {
 
         for m in Self.codeSpanRE.matches(in: str, range: r) {
             let ticks = m.range(at: 1).length
-            s.addAttributes([.font: mono, .backgroundColor: NSColor.codeFill], range: m.range)
+            s.addAttributes([.font: mono, .mdInlineCode: true], range: m.range)
             marker(NSRange(location: m.range.location, length: ticks))
             marker(NSRange(location: m.range.upperBound - ticks, length: ticks))
             taken.append(m.range)
@@ -298,13 +294,13 @@ final class Styler {
             let label = m.range(at: 1), url = m.range(at: 2)
             marker(NSRange(location: m.range.location, length: label.location - m.range.location))
             marker(NSRange(location: label.upperBound, length: m.range.upperBound - label.upperBound))
-            s.addAttributes([.foregroundColor: NSColor.linkColor, .mdURL: ns.substring(with: url)], range: label)
+            s.addAttributes([.foregroundColor: NSColor.link, .mdURL: ns.substring(with: url)], range: label)
             if !reveal { s.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: label) }
             taken.append(NSRange(location: label.upperBound, length: m.range.upperBound - label.upperBound))
         }
         for m in Self.urlRE.matches(in: str, range: r) where free(m.range) {
             let link = ns.substring(with: m.range).trimmingCharacters(in: CharacterSet(charactersIn: "<>"))
-            s.addAttributes([.foregroundColor: NSColor.linkColor, .mdURL: link], range: m.range)
+            s.addAttributes([.foregroundColor: NSColor.link, .mdURL: link], range: m.range)
             taken.append(m.range)
         }
         for m in Self.boldRE.matches(in: str, range: r) where free(m.range) {
@@ -318,7 +314,7 @@ final class Styler {
             marker(NSRange(location: m.range.upperBound - 1, length: 1))
         }
         for m in Self.strikeRE.matches(in: str, range: r) where free(m.range) {
-            s.addAttributes([.strikethroughStyle: NSUnderlineStyle.single.rawValue, .foregroundColor: NSColor.secondaryLabelColor], range: m.range)
+            s.addAttributes([.strikethroughStyle: NSUnderlineStyle.single.rawValue, .foregroundColor: NSColor.inkSecondary], range: m.range)
             marker(NSRange(location: m.range.location, length: 2))
             marker(NSRange(location: m.range.upperBound - 2, length: 2))
         }
@@ -372,7 +368,7 @@ final class MDLayoutManager: NSLayoutManager, NSLayoutManagerDelegate {
     private func drawLineNumbers(_ glyphs: NSRange, _ origin: NSPoint) {
         guard let s = textStorage else { return }
         let ns = s.string as NSString
-        let attrs: [NSAttributedString.Key: Any] = [.font: NSFont.monospacedDigitSystemFont(ofSize: 10, weight: .regular), .foregroundColor: NSColor.tertiaryLabelColor]
+        let attrs: [NSAttributedString.Key: Any] = [.font: NSFont.monospacedDigitSystemFont(ofSize: 10, weight: .regular), .foregroundColor: NSColor.syntax]
         var counted = 0, line = 1
         enumerateLineFragments(forGlyphRange: glyphs) { _, used, _, g, _ in
             let c = self.characterRange(forGlyphRange: g, actualGlyphRange: nil).location
@@ -443,6 +439,23 @@ final class MDLayoutManager: NSLayoutManager, NSLayoutManagerDelegate {
             i = max(eff.upperBound, i + 1)
         }
 
+        // Inline code pills (a backgroundColor would fill the whole line height, line spacing included).
+        i = chars.location
+        while i < end {
+            var eff = NSRange()
+            if s.attribute(.mdInlineCode, at: i, longestEffectiveRange: &eff, in: NSRange(location: i, length: end - i)) != nil {
+                let lead = (s.attribute(.paragraphStyle, at: eff.location, effectiveRange: nil) as? NSParagraphStyle)?.lineSpacing ?? 0
+                enumerateEnclosingRects(forGlyphRange: glyphRange(forCharacterRange: eff, actualCharacterRange: nil), withinSelectedGlyphRange: NSRange(location: NSNotFound, length: 0), in: tc) { r, _ in
+                    let pill = NSRect(x: r.minX - 3, y: r.minY + 1, width: r.width + 6, height: r.height - lead - 1).offsetBy(dx: origin.x, dy: origin.y)
+                    NSColor.inlineCodeFill.setFill()
+                    NSBezierPath(roundedRect: pill, xRadius: 5, yRadius: 5).fill()
+                    NSColor.rule.withAlphaComponent(0.6).setStroke()
+                    NSBezierPath(roundedRect: pill.insetBy(dx: 0.5, dy: 0.5), xRadius: 5, yRadius: 5).stroke()
+                }
+            }
+            i = max(eff.upperBound, i + 1)
+        }
+
         // Checkboxes.
         i = chars.location
         while i < end {
@@ -450,22 +463,22 @@ final class MDLayoutManager: NSLayoutManager, NSLayoutManagerDelegate {
             if let checked = s.attribute(.mdCheckbox, at: i, longestEffectiveRange: &eff, in: NSRange(location: i, length: end - i)) as? Bool {
                 let g = boundingRect(forGlyphRange: glyphRange(forCharacterRange: eff, actualCharacterRange: nil), in: tc).offsetBy(dx: origin.x, dy: origin.y)
                 let lead = (s.attribute(.paragraphStyle, at: eff.location, effectiveRange: nil) as? NSParagraphStyle)?.lineSpacing ?? 0
-                let side = min(g.width - 6, fontSize(at: eff.location) * 1.15).rounded()
+                let side = min(g.width - 8, fontSize(at: eff.location) * 1.3).rounded()
                 let box = NSRect(x: g.minX + 1, y: (g.minY + (g.height - lead - side) / 2).rounded(), width: side, height: side)
-                let path = NSBezierPath(roundedRect: box, xRadius: side * 0.28, yRadius: side * 0.28)
+                let path = NSBezierPath(roundedRect: box.insetBy(dx: 0.75, dy: 0.75), xRadius: side * 0.26, yRadius: side * 0.26)
                 if checked {
-                    NSColor.controlAccentColor.withAlphaComponent(0.16).setFill(); path.fill()
-                    path.lineWidth = 1.3
-                    NSColor.controlAccentColor.withAlphaComponent(0.75).setStroke(); path.stroke()
+                    NSColor.accent.withAlphaComponent(0.14).setFill(); path.fill()
+                    path.lineWidth = 1.6
+                    NSColor.accent.withAlphaComponent(0.55).setStroke(); path.stroke()
                     let tick = NSBezierPath()
                     tick.move(to: NSPoint(x: box.minX + side * 0.26, y: box.minY + side * 0.52))
                     tick.line(to: NSPoint(x: box.minX + side * 0.43, y: box.minY + side * 0.7))
                     tick.line(to: NSPoint(x: box.minX + side * 0.76, y: box.minY + side * 0.3))
                     tick.lineWidth = max(1.5, side * 0.12); tick.lineCapStyle = .round; tick.lineJoinStyle = .round
-                    NSColor.controlAccentColor.setStroke(); tick.stroke()
+                    NSColor.accent.setStroke(); tick.stroke()
                 } else {
-                    path.lineWidth = 1.3
-                    NSColor.tertiaryLabelColor.setStroke(); path.stroke()
+                    path.lineWidth = 1.6
+                    NSColor.marker.withAlphaComponent(0.7).setStroke(); path.stroke()
                 }
             }
             i = max(eff.upperBound, i + 1)
@@ -490,7 +503,7 @@ final class MDLayoutManager: NSLayoutManager, NSLayoutManagerDelegate {
                 used = lineFragmentUsedRect(forGlyphAt: glyphs.location, effectiveRange: nil)
                 let lead = (s.attribute(.paragraphStyle, at: line.location, effectiveRange: nil) as? NSParagraphStyle)?.lineSpacing ?? 0
                 let label = "H\(level)" as NSString
-                let attrs: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: 10, weight: .semibold), .foregroundColor: NSColor.secondaryLabelColor]
+                let attrs: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: 10, weight: .semibold), .foregroundColor: NSColor.inkSecondary]
                 let size = label.size(withAttributes: attrs)
                 let badge = NSRect(x: origin.x + frag.minX - size.width - 22, y: origin.y + used.minY + (used.height - lead - 18) / 2 + 2, width: size.width + 10, height: 18)
                 NSColor.codeFill.setFill()

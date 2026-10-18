@@ -12,7 +12,7 @@ final class MarkdownTextView: NSTextView {
         super.setFrameSize(newSize)
         let column = styler.fontSize * (styler.wysiwyg ? 36 : 42)
         let inset = max(64, ((newSize.width - column) / 2).rounded())
-        if textContainerInset.width != inset { textContainerInset = NSSize(width: inset, height: 56) }
+        if textContainerInset.width != inset { textContainerInset = NSSize(width: inset, height: 92) }
     }
 
     override func drawBackground(in rect: NSRect) {
@@ -319,6 +319,15 @@ final class MarkdownTextView: NSTextView {
         scrollRangeToVisible(selectedRange())
     }
 
+    @objc func insertRule(_ sender: Any?) {
+        breakUndoCoalescing()
+        let cur = line(at: selectedRange().location)
+        let blank = cur.text.trimmingCharacters(in: .whitespaces).isEmpty
+        let text = blank ? "---\n" : "\n\n---\n"
+        let at = blank ? cur.range : NSRange(location: cur.range.upperBound, length: 0)
+        replace(at, with: text, select: NSRange(location: at.location + (text as NSString).length, length: 0))
+    }
+
     @objc func duplicateLine(_ sender: Any?) {
         breakUndoCoalescing()
         let sel = selectedRange()
@@ -339,6 +348,7 @@ final class EditorController: NSViewController, NSTextViewDelegate, NSTextStorag
     var onChange: () -> Void = {}
     var onScroll: (CGFloat) -> Void = { _ in }
     var onOutline: () -> Void = {}
+    let formatBar = FormatBar.make()
     private var statusWork: DispatchWorkItem?
 
     override func loadView() {
@@ -365,10 +375,11 @@ final class EditorController: NSViewController, NSTextViewDelegate, NSTextStorag
         tv.isAutomaticTextReplacementEnabled = false
         tv.isAutomaticSpellingCorrectionEnabled = false
         tv.isAutomaticLinkDetectionEnabled = false
-        tv.isContinuousSpellCheckingEnabled = false
+        tv.isContinuousSpellCheckingEnabled = Settings.spellCheck
+        tv.selectedTextAttributes = [.backgroundColor: NSColor.selection]
         tv.smartInsertDeleteEnabled = false
         tv.backgroundColor = .paper
-        tv.insertionPointColor = .controlAccentColor
+        tv.insertionPointColor = .accent
         tv.typingAttributes = [.font: styler.body, .foregroundColor: NSColor.ink]
         tv.delegate = self
         storage.delegate = self
@@ -380,31 +391,49 @@ final class EditorController: NSViewController, NSTextViewDelegate, NSTextStorag
         scrollView.drawsBackground = true
         scrollView.backgroundColor = .paper
         scrollView.contentView.postsBoundsChangedNotifications = true
+        scrollView.automaticallyAdjustsContentInsets = false
+        scrollView.contentInsets = NSEdgeInsets(top: 0, left: 0, bottom: 64, right: 0)   // room above the format bar
         NotificationCenter.default.addObserver(self, selector: #selector(scrolled), name: NSView.boundsDidChangeNotification, object: scrollView.contentView)
-        NotificationCenter.default.addObserver(self, selector: #selector(fontSizeChanged), name: Settings.fontSizeChanged, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(settingsChanged), name: Settings.changed, object: nil)
 
         status.font = .monospacedDigitSystemFont(ofSize: 11, weight: .regular)
-        status.textColor = .tertiaryLabelColor
+        status.textColor = .syntax
         status.alignment = .right
 
         // Floating outline button in the left margin, like Downright.
-        let outline = NSButton(image: NSImage(systemSymbolName: "line.3.horizontal", accessibilityDescription: "Outline")!, target: self, action: #selector(outlineClicked))
+        let outline = OutlineGlyph(title: "", target: self, action: #selector(outlineClicked))
         outline.isBordered = false
-        outline.contentTintColor = .secondaryLabelColor
-        outline.symbolConfiguration = .init(pointSize: 22, weight: .light)
         outline.toolTip = "Files & Outline  ⇧⌘O"
+        outline.setAccessibilityLabel("Files and Outline")
+
+        // Soft shadow under the title band, as in Downright.
+        let shade = ShadeView()
+        let statusPill = glass(status, cornerRadius: 10)
+        formatBar.isHidden = !Settings.formatBar
 
         let root = NSView()
-        for v in [scrollView, status, outline] as [NSView] { v.translatesAutoresizingMaskIntoConstraints = false; root.addSubview(v) }
+        for v in [scrollView, shade, statusPill, outline, formatBar] as [NSView] { v.translatesAutoresizingMaskIntoConstraints = false; root.addSubview(v) }
         NSLayoutConstraint.activate([
             scrollView.topAnchor.constraint(equalTo: root.topAnchor),
             scrollView.bottomAnchor.constraint(equalTo: root.bottomAnchor),
             scrollView.leadingAnchor.constraint(equalTo: root.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: root.trailingAnchor),
-            status.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -14),
-            status.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -6),
-            outline.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 18),
+            shade.topAnchor.constraint(equalTo: root.topAnchor),
+            shade.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+            shade.trailingAnchor.constraint(equalTo: root.trailingAnchor),
+            shade.heightAnchor.constraint(equalToConstant: 14),
+            statusPill.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -14),
+            statusPill.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -12),
+            status.leadingAnchor.constraint(equalTo: statusPill.leadingAnchor, constant: 10),
+            status.trailingAnchor.constraint(equalTo: statusPill.trailingAnchor, constant: -10),
+            status.topAnchor.constraint(equalTo: statusPill.topAnchor, constant: 4),
+            status.bottomAnchor.constraint(equalTo: statusPill.bottomAnchor, constant: -4),
+            outline.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 22),
             outline.centerYAnchor.constraint(equalTo: root.centerYAnchor),
+            outline.widthAnchor.constraint(equalToConstant: 30),
+            outline.heightAnchor.constraint(equalToConstant: 30),
+            formatBar.centerXAnchor.constraint(equalTo: root.centerXAnchor),
+            formatBar.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -14),
         ])
         root.frame = NSRect(x: 0, y: 0, width: 700, height: 600)
         view = root
@@ -488,7 +517,7 @@ final class EditorController: NSViewController, NSTextViewDelegate, NSTextStorag
     func setWysiwyg(_ on: Bool) {
         guard styler.wysiwyg != on || textView.string.isEmpty else { return }
         styler.wysiwyg = on
-        (textView.layoutManager as? MDLayoutManager)?.lineNumbers = !on
+        (textView.layoutManager as? MDLayoutManager)?.lineNumbers = !on && Settings.lineNumbers
         styler.revealed = NSRange(location: NSNotFound, length: 0)
         textView.typingAttributes[.font] = styler.body
         styler.restyleAll(textView.textStorage!)
@@ -525,7 +554,12 @@ final class EditorController: NSViewController, NSTextViewDelegate, NSTextStorag
         onScroll(range > 0 ? min(1, max(0, clip.bounds.minY / range)) : 0)
     }
 
-    @objc private func fontSizeChanged() {
+    @objc private func settingsChanged() {
+        (textView.layoutManager as? MDLayoutManager)?.lineNumbers = !styler.wysiwyg && Settings.lineNumbers
+        textView.isContinuousSpellCheckingEnabled = Settings.spellCheck
+        formatBar.isHidden = !Settings.formatBar
+        textView.needsDisplay = true
+        guard styler.fontSize != Settings.fontSize else { return }
         styler.fontSize = Settings.fontSize
         textView.typingAttributes[.font] = styler.body
         styler.restyleAll(textView.textStorage!)
@@ -534,9 +568,25 @@ final class EditorController: NSViewController, NSTextViewDelegate, NSTextStorag
 }
 
 enum Settings {
-    static let fontSizeChanged = Notification.Name("InkdownFontSizeChanged")
+    static let changed = Notification.Name("ParchlySettingsChanged")
+    private static func post() { NotificationCenter.default.post(name: changed, object: nil) }
+
     static var fontSize: CGFloat {
-        get { let v = UserDefaults.standard.double(forKey: "fontSize"); return v > 0 ? v : 17 }
-        set { UserDefaults.standard.set(min(32, max(11, newValue)), forKey: "fontSize"); NotificationCenter.default.post(name: fontSizeChanged, object: nil) }
+        get { let v = UserDefaults.standard.double(forKey: "fontSize"); return v > 0 ? v : 16 }
+        set { UserDefaults.standard.set(min(32, max(11, newValue)), forKey: "fontSize"); post() }
+    }
+    /// Line numbers in Source mode (off by default, like Downright's reading setup).
+    static var lineNumbers: Bool {
+        get { UserDefaults.standard.bool(forKey: "lineNumbers") }
+        set { UserDefaults.standard.set(newValue, forKey: "lineNumbers"); post() }
+    }
+    /// Bear-style formatting bar at the bottom of the editor (on by default).
+    static var formatBar: Bool {
+        get { UserDefaults.standard.object(forKey: "formatBar") as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: "formatBar"); post() }
+    }
+    static var spellCheck: Bool {
+        get { UserDefaults.standard.bool(forKey: "spellCheck") }
+        set { UserDefaults.standard.set(newValue, forKey: "spellCheck"); post() }
     }
 }
