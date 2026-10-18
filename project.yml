@@ -26,6 +26,14 @@ targets:
       - package: cmark
         product: cmark-gfm-extensions
       - target: InkdownQuickLook
+    entitlements:
+      path: App/Inkdown.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.files.user-selected.read-write: true
+        com.apple.security.files.bookmarks.app-scope: true
+        com.apple.security.print: true
+        com.apple.security.network.client: true   # WKWebView preview processes need it; the app makes no network requests
     settings:
       base:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
@@ -35,6 +43,7 @@ targets:
       properties:
         CFBundleDisplayName: Inkdown
         NSHumanReadableCopyright: © 2026 Purv Taparia. MIT License.
+        ITSAppUsesNonExemptEncryption: false
         NSPrincipalClass: NSApplication
         LSApplicationCategoryType: public.app-category.productivity
         CFBundleDocumentTypes:

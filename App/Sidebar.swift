@@ -8,7 +8,9 @@ final class SidebarModel: ObservableObject {
     @Published var headings: [MD.Heading] = []
     @Published var current: URL?
     @Published var focusTick = 0
+    @Published var needsAccess = false
     var root: URL?
+    var grant: () -> Void = {}
     var open: (URL) -> Void = { _ in }
     var jump: (Int) -> Void = { _ in }
     var newFile: () -> Void = {}
@@ -17,7 +19,9 @@ final class SidebarModel: ObservableObject {
     static let extensions: Set<String> = ["md", "markdown", "mdown", "mkd", "mkdn", "mdwn"]
 
     func reload() {
-        guard let root else { files = []; return }
+        guard let root else { files = []; needsAccess = false; return }
+        needsAccess = !FolderAccess.canRead(root)
+        guard !needsAccess else { files = []; return }
         DispatchQueue.global(qos: .userInitiated).async {
             let found = Self.scan(root)
             DispatchQueue.main.async { if self.root == root, self.files != found { self.files = found } }
@@ -94,6 +98,7 @@ struct SidebarView: View {
                 List {
                     if model.tab == .files { fileRows } else { headingRows }
                 }
+                .overlay { if model.tab == .files && model.needsAccess { accessPrompt } }
                 .listStyle(.sidebar)
                 .onChange(of: highlight) { proxy.scrollTo(highlight) }
             }
@@ -133,6 +138,18 @@ struct SidebarView: View {
         RoundedRectangle(cornerRadius: 5).fill(searching && i == highlight ? Color.accentColor.opacity(0.18) : .clear)
     }
 
+    /// Sandboxed builds can only read folders the user has granted.
+    private var accessPrompt: some View {
+        VStack(spacing: 10) {
+            Image(systemName: "folder.badge.plus").font(.system(size: 26)).foregroundStyle(.secondary)
+            Text("See the other Markdown files in “\(model.root?.lastPathComponent ?? "this folder")”.")
+                .multilineTextAlignment(.center).foregroundStyle(.secondary)
+            Button("Allow Access…", action: model.grant)
+        }
+        .font(.callout)
+        .padding(20)
+    }
+
     private var fileRows: some View {
         ForEach(Array(model.visibleFiles.enumerated()), id: \.element) { i, url in
             let isCurrent = url == model.current?.standardizedFileURL
@@ -170,5 +187,27 @@ struct SidebarView: View {
             .listRowBackground(rowBackground(i))
             .id(i)
         }
+    }
+}
+
+/// Folder permissions for the App Sandbox, remembered as security-scoped bookmarks.
+enum FolderAccess {
+    private static let key = "folderBookmarks"
+
+    static func canRead(_ dir: URL) -> Bool { (try? FileManager.default.contentsOfDirectory(atPath: dir.path)) != nil }
+
+    static func restore() {
+        for data in UserDefaults.standard.array(forKey: key) as? [Data] ?? [] {
+            var stale = false
+            if let url = try? URL(resolvingBookmarkData: data, options: .withSecurityScope, bookmarkDataIsStale: &stale) {
+                _ = url.startAccessingSecurityScopedResource()
+            }
+        }
+    }
+
+    static func add(_ url: URL) {
+        _ = url.startAccessingSecurityScopedResource()
+        guard let data = try? url.bookmarkData(options: .withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil) else { return }
+        UserDefaults.standard.set((UserDefaults.standard.array(forKey: key) as? [Data] ?? []) + [data], forKey: key)
     }
 }

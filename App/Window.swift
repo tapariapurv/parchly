@@ -33,11 +33,11 @@ final class PreviewController: NSViewController, WKNavigationDelegate {
     private var loaded = false
     private var html = ""
     private var base: URL?
-    private lazy var shell = FileManager.default.temporaryDirectory.appendingPathComponent("inkdown-\(UUID().uuidString).html")
 
     override func loadView() {
         let config = WKWebViewConfiguration()
         config.defaultWebpagePreferences.allowsContentJavaScript = false
+        config.setURLSchemeHandler(LocalFiles(), forURLScheme: LocalFiles.scheme)
         web = WKWebView(frame: NSRect(x: 0, y: 0, width: 600, height: 600), configuration: config)
         web.navigationDelegate = self
         web.setValue(false, forKey: "drawsBackground")   // no white flash before CSS paints
@@ -46,7 +46,6 @@ final class PreviewController: NSViewController, WKNavigationDelegate {
         reload()
     }
 
-    deinit { try? FileManager.default.removeItem(at: shell) }
 
     func setBase(_ url: URL?) {
         guard url != base else { return }
@@ -54,12 +53,12 @@ final class PreviewController: NSViewController, WKNavigationDelegate {
         if isViewLoaded { reload() }
     }
 
-    /// Shell page with a <base> so relative images resolve; content is then swapped in place to keep scroll position.
+    /// Page based in the document's folder (via LocalFiles) so relative images resolve; content is then
+    /// swapped in place to keep scroll position.
     private func reload() {
         loaded = false
-        let page = Renderer.page("", base: base).replacingOccurrences(of: "<article id=\"c\"></article>", with: "<article id=\"c\">\(html)</article>")
-        try? page.write(to: shell, atomically: true, encoding: .utf8)
-        web.loadFileURL(shell, allowingReadAccessTo: URL(fileURLWithPath: "/"))
+        let page = Renderer.page("").replacingOccurrences(of: "<article id=\"c\"></article>", with: "<article id=\"c\">\(html)</article>")
+        web.loadHTMLString(page, baseURL: base.map(LocalFiles.url) ?? URL(string: "\(LocalFiles.scheme):///")!)
     }
 
     func update(_ markdown: String, then: (() -> Void)? = nil) {
@@ -83,11 +82,12 @@ final class PreviewController: NSViewController, WKNavigationDelegate {
     func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
         guard action.navigationType == .linkActivated, let url = action.request.url else { return decisionHandler(.allow) }
         decisionHandler(.cancel)
-        let samePage = url.isFileURL && (url.path == shell.path || url.path == base?.path || url.path + "/" == base?.path)
-        if let fragment = url.fragment, samePage {
+        guard url.scheme == LocalFiles.scheme else { return openLink(url) }
+        let file = URL(fileURLWithPath: url.path)
+        if let fragment = url.fragment, file.standardizedFileURL.path == base?.standardizedFileURL.path {
             web.evaluateJavaScript("document.getElementById(\(Self.js(fragment)))?.scrollIntoView()", in: nil, in: .defaultClient) { _ in }
         } else {
-            openLink(url)
+            openLink(file)
         }
     }
 
@@ -96,6 +96,25 @@ final class PreviewController: NSViewController, WKNavigationDelegate {
         op.view?.frame = NSRect(x: 0, y: 0, width: info.paperSize.width, height: info.paperSize.height)
         return op
     }
+}
+
+/// Serves local files (images next to the document) to the preview from the app process, which holds
+/// the sandbox permission for the document and any granted folders.
+final class LocalFiles: NSObject, WKURLSchemeHandler {
+    static let scheme = "inkdown-file"
+    static func url(_ dir: URL) -> URL { URL(string: "\(scheme)://" + (dir.path.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? "") + "/")! }
+
+    func webView(_ webView: WKWebView, start task: WKURLSchemeTask) {
+        guard let url = task.request.url, let data = try? Data(contentsOf: URL(fileURLWithPath: url.path)) else {
+            return task.didFailWithError(URLError(.fileDoesNotExist))
+        }
+        let mime = UTType(filenameExtension: url.pathExtension)?.preferredMIMEType ?? "application/octet-stream"
+        task.didReceive(URLResponse(url: url, mimeType: mime, expectedContentLength: data.count, textEncodingName: nil))
+        task.didReceive(data)
+        task.didFinish()
+    }
+
+    func webView(_ webView: WKWebView, stop task: WKURLSchemeTask) {}
 }
 
 // MARK: - Window
@@ -159,6 +178,7 @@ final class WindowController: NSWindowController, NSWindowDelegate, NSToolbarDel
         editor.onOutline = { [weak self] in self?.toggleOutline() }
         modeControl.onChange = { [weak self] in self?.setSource($0 == 1) }
         sidebar.newFile = { [weak self] in self?.newFileInFolder() }
+        sidebar.grant = { [weak self] in self?.grantFolderAccess() }
         sidebar.done = { [weak self] in self?.focusContent() }
         editor.setWysiwyg(!source)
         applyLayout()
@@ -287,7 +307,28 @@ final class WindowController: NSWindowController, NSWindowDelegate, NSToolbarDel
         open(url: URL(fileURLWithPath: path, relativeTo: root).standardizedFileURL)
     }
 
+    /// Asks once for a folder (App Sandbox), then remembers it across launches.
+    private func grantFolderAccess(then: (() -> Void)? = nil) {
+        guard let window, let root = sidebar.root else { return }
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.directoryURL = root
+        panel.prompt = "Allow Access"
+        panel.message = "Inkdown needs access to this folder to list its Markdown files, open links and show images."
+        panel.beginSheetModal(for: window) { [weak self] r in
+            guard r == .OK, let url = panel.url, let self else { return }
+            FolderAccess.add(url)
+            sidebar.reload()
+            preview.setBase(nil); preview.setBase(root)
+            then?()
+        }
+    }
+
     private func open(url: URL) {
+        if url.isFileURL, !FileManager.default.isReadableFile(atPath: url.path), sidebar.root != nil {
+            return grantFolderAccess { [weak self] in self?.open(url: url) }
+        }
         if url.isFileURL, SidebarModel.extensions.contains(url.pathExtension.lowercased()) {
             NSDocumentController.shared.openDocument(withContentsOf: url, display: true) { _, _, error in
                 if let error { NSApp.presentError(error) }
@@ -299,6 +340,7 @@ final class WindowController: NSWindowController, NSWindowDelegate, NSToolbarDel
 
     private func newFileInFolder() {
         guard let root = sidebar.root else { return NSDocumentController.shared.newDocument(nil) }
+        guard FolderAccess.canRead(root) else { return grantFolderAccess { [weak self] in self?.newFileInFolder() } }
         var url = root.appendingPathComponent("Untitled.md"), n = 2
         while FileManager.default.fileExists(atPath: url.path) { url = root.appendingPathComponent("Untitled \(n).md"); n += 1 }
         do {

@@ -5,3 +5,4 @@ build/
 App/Info.plist
 QuickLook/Info.plist
 QuickLook/*.entitlements
+App/*.entitlements

@@ -5,6 +5,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSWindow.allowsAutomaticWindowTabbing = true
         NSApp.mainMenu = buildMenu()
         Theme.apply()
+        FolderAccess.restore()
     }
 
     func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool { true }
