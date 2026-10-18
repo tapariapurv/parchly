@@ -26,16 +26,22 @@ targets:
       - package: cmark
         product: cmark-gfm-extensions
       - target: InkdownQuickLook
+    settings:
+      base:
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        PRODUCT_BUNDLE_IDENTIFIER: com.purvt.Inkdown
     info:
       path: App/Info.plist
       properties:
         CFBundleDisplayName: Inkdown
+        NSHumanReadableCopyright: © 2026 Purv Taparia. MIT License.
         NSPrincipalClass: NSApplication
         LSApplicationCategoryType: public.app-category.productivity
         CFBundleDocumentTypes:
           - CFBundleTypeName: Markdown Document
             CFBundleTypeRole: Editor
             LSHandlerRank: Default
+            CFBundleTypeIconSystemGenerated: 1
             LSItemContentTypes: [net.daringfireball.markdown]
             NSDocumentClass: $(PRODUCT_MODULE_NAME).Document
         UTImportedTypeDeclarations:
