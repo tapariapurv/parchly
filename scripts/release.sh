@@ -10,7 +10,7 @@ cd "$(dirname "$0")/.."
 sed -i '' "s/MARKETING_VERSION: \".*\"/MARKETING_VERSION: \"$VERSION\"/" project.yml
 xcodegen -q
 xcodebuild -project Inkdown.xcodeproj -scheme Inkdown -configuration Release \
-  -derivedDataPath build/release -clonedSourcePackagesDirPath build/spm clean build -quiet
+  -derivedDataPath build/release -clonedSourcePackagesDirPath build/spm ARCHS="arm64 x86_64" ONLY_ACTIVE_ARCH=NO clean build -quiet
 APP=build/release/Build/Products/Release/Inkdown.app
 codesign --verify --deep --strict "$APP"
 
