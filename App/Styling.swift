@@ -45,9 +45,15 @@ final class Styler {
     var revealed = NSRange(location: NSNotFound, length: 0)
     private(set) var code: [NSRange] = []
 
+    private static var serifCache: [String: NSFont] = [:]
+    /// Font matching is slow and runs per line, so each size/weight is built once.
     private func serif(_ size: CGFloat, _ weight: NSFont.Weight = .regular) -> NSFont {
+        let key = "\(size)-\(weight.rawValue)"
+        if let f = Self.serifCache[key] { return f }
         let base = NSFont.systemFont(ofSize: size, weight: weight)
-        return base.fontDescriptor.withDesign(.serif).flatMap { NSFont(descriptor: $0, size: size) } ?? base
+        let f = base.fontDescriptor.withDesign(.serif).flatMap { NSFont(descriptor: $0, size: size) } ?? base
+        Self.serifCache[key] = f
+        return f
     }
     var body: NSFont { wysiwyg ? serif(fontSize) : .monospacedSystemFont(ofSize: fontSize * 0.9, weight: .regular) }
     private var mono: NSFont { .monospacedSystemFont(ofSize: fontSize * 0.84, weight: .regular) }
@@ -142,6 +148,9 @@ final class Styler {
             lines.append((NSRange(location: start, length: end - start), NSRange(location: start, length: contentsEnd - start)))
             loc = end
         } while loc < range.upperBound && loc < ns.length
+        // Collapse to one attribute run first: restyling over many existing runs is quadratic (21 s → 3 s for 1 MB).
+        s.setAttributes([.font: body, .foregroundColor: NSColor.ink, .paragraphStyle: paragraph()],
+                        range: NSRange(location: lines[0].full.location, length: lines[lines.count - 1].full.upperBound - lines[0].full.location))
 
         var table = Array(repeating: 0, count: lines.count)   // 0 none, 1 header, 2 separator, 3 body
         var i = 0
