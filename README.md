@@ -113,10 +113,13 @@ Parchly runs in the App Sandbox and includes a privacy manifest (no data collect
 scripts/test.sh
 ```
 
-This runs three suites:
+This runs four suites:
 - **Editing rules** (`Tests/main.swift`): list continuation and renumbering, toggles, table formatting and navigation, code fences.
-- **Live editor** (`Tests/editor.swift`): drives the real text view in both modes. It covers typing, smart Return/Tab/Backspace, wrap and auto-pair, undo/redo, copy/cut/paste (including rich text and URLs), every format command, caret clamping, round-trip fidelity, incremental fence tracking, and a 1 MB performance check (about 12 ms per keystroke).
-- **Renderer**: alerts, math, highlights, wiki links, emoji and code colouring, run through the app's `--render-html` hook.
+- **Live editor** (`Tests/editor.swift`): drives the real text view in both modes. It covers typing, smart Return/Tab/Backspace, wrap and auto-pair, undo/redo, copy/cut/paste (including rich text and URLs), every format command, clicking checkboxes and links, wrap indents, caret clamping, round-trip fidelity, incremental fence tracking, and a 1 MB performance check (about 7 ms per keystroke on an idle Mac).
+- **Renderer**: alerts, math, highlights, wiki links, emoji, code colouring and task lists, run through the app's `--render-html` hook.
+- **App self-test** (`App/SelfTest.swift`, Debug build): `Parchly --selftest` opens real documents and checks saving, reverting, the sidebar, links, pasted images, Find, modes, the preview, themes, settings and Home. It also clicks every formatting-bar button and fires every menu command, checking exact undo.
+
+For screenshots without touching the screen, a Debug build renders windows offscreen: `Parchly --snapshot home|doc [preview] [source] [dark] < note.md > out.png`.
 
 ## Project layout
 
@@ -128,6 +131,7 @@ This runs three suites:
 | `App/Window.swift` | `NSDocument`, window/toolbar, preview (`WKWebView`), export and print |
 | `App/Sidebar.swift` | SwiftUI files & outline sidebar |
 | `App/Home.swift` | Home window: actions, recent documents, drop to open |
+| `App/SelfTest.swift` | Debug-only `--selftest`: drives documents, windows, menus and settings in-process |
 | `Shared/Renderer.swift` | cmark-gfm → HTML plus CSS, shared by the preview and Quick Look |
 | `QuickLook/` | Data-based Quick Look preview extension |
 | `docs/` | Website (GitHub Pages) |
