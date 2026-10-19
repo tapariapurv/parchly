@@ -5,6 +5,31 @@ import AppKit
 final class MarkdownTextView: NSTextView {
     var styler: Styler!
     var openLink: (String) -> Void = { _ in }
+    /// Markdown destination for a dropped/pasted file (relative to the document when possible).
+    var fileLink: (URL) -> String = { $0.path.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? $0.path }
+    /// Saves pasted image data next to the document; returns its Markdown path, or nil if that isn't possible.
+    var saveImage: (Data) -> String? = { _ in nil }
+
+    private static let imageExts: Set<String> = ["png", "jpg", "jpeg", "gif", "webp", "heic", "svg", "tiff", "bmp"]
+
+    /// `![name](path)` for images, `[name](path)` for anything else, one per line.
+    private func markdown(for urls: [URL]) -> String {
+        urls.map { url in
+            let name = url.deletingPathExtension().lastPathComponent
+            return (Self.imageExts.contains(url.pathExtension.lowercased()) ? "!" : "") + "[\(name)](\(fileLink(url)))"
+        }.joined(separator: "\n")
+    }
+
+    override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
+        let urls = sender.draggingPasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? []
+        guard !urls.isEmpty else { return super.performDragOperation(sender) }
+        let at = characterIndexForInsertion(at: convert(sender.draggingLocation, from: nil))
+        let text = markdown(for: urls)
+        breakUndoCoalescing()
+        replace(NSRange(location: at, length: 0), with: text, select: NSRange(location: at + (text as NSString).length, length: 0))
+        window?.makeFirstResponder(self)
+        return true
+    }
 
     private var ns: NSString { string as NSString }
 
@@ -147,9 +172,7 @@ final class MarkdownTextView: NSTextView {
         guard sel.length == 0, !hasMarkedText(), !NSEvent.modifierFlags.contains(.shift) else { return super.insertNewline(sender) }
         breakUndoCoalescing()
         let cur = line(at: sel.location)
-        if styler.inCode(sel.location) {
-            return replace(sel, with: "\n" + MD.leadingWhitespace(cur.text), select: nil)
-        }
+        if styler.inCode(sel.location) { return codeNewline(sel, cur) }
         if let t = table(at: sel.location) {
             return apply(MD.tableReturn(t.rows, row: t.row), replacing: t.range)
         }
@@ -168,8 +191,31 @@ final class MarkdownTextView: NSTextView {
         scrollRangeToVisible(selectedRange())
     }
 
+    /// Return inside fenced code: auto-close a fresh fence, keep indentation, indent after { [ ( :
+    private func codeNewline(_ sel: NSRange, _ cur: (range: NSRange, text: String)) {
+        let lead = MD.leadingWhitespace(cur.text)
+        let caretInLine = sel.location - cur.range.location
+        if styler.openAtEnd, let last = styler.code.last, last.location == cur.range.location, caretInLine == cur.range.length,
+           let m = MD.fenceRE.firstMatch(in: cur.text, range: MD.full(cur.text)) {
+            let fence = (cur.text as NSString).substring(with: m.range(at: 1))
+            return replace(sel, with: "\n" + lead + "\n" + lead + fence, select: NSRange(location: sel.location + 1 + (lead as NSString).length, length: 0))
+        }
+        let before = (cur.text as NSString).substring(to: caretInLine).trimmingCharacters(in: .whitespaces)
+        let opens = ["{", "[", "(", ":"].contains { before.hasSuffix($0) }
+        let next = sel.location < ns.length ? ns.substring(with: NSRange(location: sel.location, length: 1)) : ""
+        let inner = lead + (opens ? "    " : "")
+        if opens, ["}", "]", ")"].contains(next) {   // {|} → block with the caret on an indented middle line
+            return replace(sel, with: "\n" + inner + "\n" + lead, select: NSRange(location: sel.location + 1 + (inner as NSString).length, length: 0))
+        }
+        replace(sel, with: "\n" + inner, select: NSRange(location: sel.location + 1 + (inner as NSString).length, length: 0))
+    }
+
     override func insertTab(_ sender: Any?) {
         guard !hasMarkedText() else { return super.insertTab(sender) }
+        if styler.inCode(selectedRange().location) {   // code: spaces, or indent a multi-line selection
+            breakUndoCoalescing()
+            return ns.substring(with: selectedRange()).contains("\n") ? indentLines(sender) : replace(selectedRange(), with: "    ", select: NSRange(location: selectedRange().location + 4, length: 0))
+        }
         let sel = selectedRange()
         if let t = table(at: sel.location) {
             breakUndoCoalescing()
@@ -213,7 +259,33 @@ final class MarkdownTextView: NSTextView {
         renumberList(at: cur.range.location)
     }
 
+    /// The link under the mouse, if any (glyph hit-test, not nearest insertion point).
+    private func link(at point: NSPoint) -> (url: String, index: Int)? {
+        guard let lm = layoutManager, let tc = textContainer, let storage = textStorage, storage.length > 0 else { return nil }
+        let p = NSPoint(x: point.x - textContainerOrigin.x, y: point.y - textContainerOrigin.y)
+        var fraction: CGFloat = 0
+        let g = lm.glyphIndex(for: p, in: tc, fractionOfDistanceThroughGlyph: &fraction)
+        guard g < lm.numberOfGlyphs, lm.boundingRect(forGlyphRange: NSRange(location: g, length: 1), in: tc).contains(p) else { return nil }
+        let i = lm.characterIndexForGlyph(at: g)
+        return (storage.attribute(.mdURL, at: i, effectiveRange: nil) as? String).map { ($0, i) }
+    }
+
+    /// Rendered links (Document mode, not the line being edited) open with a plain click; ⌘-click works everywhere.
+    private func opensOnClick(_ index: Int, _ flags: NSEvent.ModifierFlags) -> Bool {
+        flags.contains(.command) || (styler.wysiwyg && !NSLocationInRange(index, styler.revealed) && !flags.contains(.shift))
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        super.mouseMoved(with: event)
+        if let hit = link(at: convert(event.locationInWindow, from: nil)), opensOnClick(hit.index, event.modifierFlags) {
+            NSCursor.pointingHand.set()
+        }
+    }
+
     override func mouseDown(with event: NSEvent) {
+        if event.clickCount == 1, let hit = link(at: convert(event.locationInWindow, from: nil)), opensOnClick(hit.index, event.modifierFlags) {
+            return openLink(hit.url)
+        }
         let point = convert(event.locationInWindow, from: nil)
         let idx = characterIndexForInsertion(at: point)
         if idx <= ns.length, let lm = layoutManager, let tc = textContainer {
@@ -244,6 +316,21 @@ final class MarkdownTextView: NSTextView {
             let label = ns.substring(with: sel)
             breakUndoCoalescing()
             return replace(sel, with: "[\(label)](\(s))", select: NSRange(location: sel.location + (label as NSString).length + (s as NSString).length + 4, length: 0))
+        }
+        let pb = NSPasteboard.general
+        // Files copied in Finder paste as links (images as images).
+        if let urls = pb.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL], !urls.isEmpty {
+            breakUndoCoalescing()
+            let text = markdown(for: urls)
+            return replace(sel, with: text, select: NSRange(location: sel.location + (text as NSString).length, length: 0))
+        }
+        // A screenshot or copied image (no text) is saved next to the note and inserted.
+        if pb.string(forType: .string) == nil, let image = NSImage(pasteboard: pb), let tiff = image.tiffRepresentation,
+           let png = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]) {
+            guard let path = saveImage(png) else { return NSSound.beep() }
+            breakUndoCoalescing()
+            let text = "![](\(path))"
+            return replace(sel, with: text, select: NSRange(location: sel.location + (text as NSString).length, length: 0))
         }
         pasteAsPlainText(sender)
     }
@@ -481,7 +568,7 @@ final class EditorController: NSViewController, NSTextViewDelegate, NSTextStorag
         let sel = textView.selectedRange()
         let scroll = scrollView.contentView.bounds.origin
         textView.string = s
-        undoSource?.undoManager?.removeAllActions()
+        textView.undoManager?.removeAllActions()
         let len = (s as NSString).length
         textView.setSelectedRange(NSRange(location: min(sel.location, len), length: 0))
         scrollView.contentView.scroll(to: scroll)

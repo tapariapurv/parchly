@@ -84,14 +84,15 @@ final class Styler {
             let touchesBoundary = predicted.contains { NSLocationInRange($0.location, lines) || NSLocationInRange(max($0.location, $0.upperBound - 1), lines) }
             fenceSafe = !touchesBoundary && MD.fenceRE.firstMatch(in: ns as String, range: lines) == nil
         }
-        let newCode = fenceSafe ? predicted : MD.codeBlocks(ns)
+        let newCode: [NSRange]
+        if fenceSafe { newCode = predicted } else { let d = MD.codeBlocksDetailed(ns); newCode = d.blocks; openAtEnd = d.openAtEnd }
         let structural = predicted != newCode
         code = newCode
         style(s, range: structural ? NSRange(location: 0, length: ns.length) : block(around: edited, in: ns))
     }
 
     func restyleAll(_ s: NSTextStorage) {
-        code = MD.codeBlocks(s.string as NSString)
+        (code, openAtEnd) = MD.codeBlocksDetailed(s.string as NSString)
         s.beginEditing()
         style(s, range: NSRange(location: 0, length: s.length))
         s.endEditing()
@@ -106,7 +107,11 @@ final class Styler {
         s.endEditing()
     }
 
-    func inCode(_ loc: Int) -> Bool { code.contains { NSLocationInRange(loc, $0) } }
+    /// True when the caret at `loc` is in a fenced block, including the very end of a still-open block.
+    func inCode(_ loc: Int) -> Bool {
+        code.contains { NSLocationInRange(loc, $0) } || (openAtEnd && code.last.map { loc == $0.upperBound } == true)
+    }
+    private(set) var openAtEnd = false
 
     /// Lines expanded to blank-line boundaries (tables need their header/separator context).
     private func block(around r: NSRange, in ns: NSString) -> NSRange {
@@ -372,7 +377,7 @@ final class Styler {
             marker(NSRange(location: m.range.location, length: shown.location - m.range.location))
             marker(NSRange(location: shown.upperBound, length: m.range.upperBound - shown.upperBound))
             s.addAttributes([.foregroundColor: NSColor.link, .mdURL: "wiki:" + target], range: shown)
-            if !reveal { s.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue | NSUnderlineStyle.patternDot.rawValue, range: shown) }
+            s.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue | NSUnderlineStyle.patternDot.rawValue, range: shown)
             taken.append(m.range)
         }
         for m in Self.footRE.matches(in: str, range: r) where free(m.range) {   // [^1] footnote reference
@@ -388,12 +393,12 @@ final class Styler {
             marker(NSRange(location: m.range.location, length: label.location - m.range.location))
             marker(NSRange(location: label.upperBound, length: m.range.upperBound - label.upperBound))
             s.addAttributes([.foregroundColor: NSColor.link, .mdURL: ns.substring(with: url)], range: label)
-            if !reveal { s.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: label) }
+            s.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: label)   // links always look like links
             taken.append(NSRange(location: label.upperBound, length: m.range.upperBound - label.upperBound))
         }
         for m in Self.urlRE.matches(in: str, range: r) where free(m.range) {
             let link = ns.substring(with: m.range).trimmingCharacters(in: CharacterSet(charactersIn: "<>"))
-            s.addAttributes([.foregroundColor: NSColor.link, .mdURL: link], range: m.range)
+            s.addAttributes([.foregroundColor: NSColor.link, .mdURL: link, .underlineStyle: NSUnderlineStyle.single.rawValue], range: m.range)
             taken.append(m.range)
         }
         for m in Self.boldRE.matches(in: str, range: r) where free(m.range) {

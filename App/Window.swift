@@ -215,6 +215,21 @@ final class WindowController: NSWindowController, NSWindowDelegate, NSToolbarDel
         editor.onChange = { [weak self] in self?.scheduleRender() }
         editor.onScroll = { [weak self] f in if self?.showsPreview == true { self?.preview.scroll(to: f) } }
         editor.textView.openLink = { [weak self] in self?.open(link: $0) }
+        editor.textView.fileLink = { [weak self] url in
+            let path: String
+            if let root = self?.sidebar.root?.standardizedFileURL.path, url.standardizedFileURL.path.hasPrefix(root + "/") {
+                path = String(url.standardizedFileURL.path.dropFirst(root.count + 1))
+            } else { path = url.path }
+            return path.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? path
+        }
+        editor.textView.saveImage = { [weak self] data in
+            guard let self, let root = sidebar.root else { return nil }
+            guard FolderAccess.canRead(root) else { grantFolderAccess(); return nil }   // paste again once allowed
+            let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd 'at' HH.mm.ss"
+            let name = "Pasted Image \(f.string(from: Date())).png"
+            guard (try? data.write(to: root.appendingPathComponent(name), options: .withoutOverwriting)) != nil else { return nil }
+            return name.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)
+        }
         preview.openLink = { [weak self] in self?.open(url: $0) }
         sidebar.open = { [weak self] in self?.open(url: $0) }
         sidebar.jump = { [weak self] in self?.editor.jump(to: $0) }

@@ -114,6 +114,122 @@ for mode in [true, false] {   // Document mode, then Source mode
     check(text == sample, "\(m) styling preserves text")
 }
 
+// ---- Code blocks
+for mode in [true, false] {
+    ed.setWysiwyg(mode); let m = mode ? "doc" : "source"
+    load(""); type("```js"); tv.insertNewline(nil)
+    check(text == "```js\n\n```" && sel().location == 6, "\(m) fence auto-closes: \(text.debugDescription)")
+    type("if (x) {"); tv.insertNewline(nil); type("y")
+    check(text == "```js\nif (x) {\n    y\n```", "\(m) indent after {, no auto-pair in code: \(text.debugDescription)")
+    tv.insertTab(nil)
+    check(text.contains("    y    \n"), "\(m) tab in code inserts spaces")
+    tv.setSelectedRange(NSRange(location: (text as NSString).length, length: 0)); tv.insertNewline(nil); type("- after")
+    check(text.hasSuffix("```\n- after") && !ed.styler.inCode(sel().location), "\(m) text after closing fence is not code")
+    tv.insertNewline(nil)
+    check(text.hasSuffix("- after\n- "), "\(m) lists work after a code block")
+    load("x = {}", caret: 5); load("```\nx = {}\n```", caret: 9); tv.insertNewline(nil)
+    check(text == "```\nx = {\n    \n}\n```", "\(m) return between braces: \(text.debugDescription)")
+    load("code"); tv.selectAll(nil); tv.insertCodeBlock(nil)
+    check(text == "```\ncode\n```", "\(m) code block command wraps selection")
+    load("```\n**not bold**\n```")
+    let f = tv.textStorage!.attribute(.font, at: 6, effectiveRange: nil) as? NSFont
+    check(f?.isFixedPitch == true && tv.textStorage!.attribute(.mdHide, at: 4, effectiveRange: nil) == nil, "\(m) markdown inside code is left alone")
+}
+
+// ---- Links always look like links
+for mode in [true, false] {
+    ed.setWysiwyg(mode)
+    load("intro\n\n[site](https://a.com) https://b.com [[Note]]", caret: 0)
+    let s = tv.textStorage!, base = 7
+    check(s.attribute(.underlineStyle, at: base + 1, effectiveRange: nil) != nil && s.attribute(.mdURL, at: base + 1, effectiveRange: nil) as? String == "https://a.com", "link underlined + clickable (\(mode))")
+    check(s.attribute(.underlineStyle, at: base + 30, effectiveRange: nil) != nil, "bare URL underlined (\(mode))")
+    check(s.attribute(.mdURL, at: (text as NSString).range(of: "Note").location, effectiveRange: nil) as? String == "wiki:Note", "wiki link target (\(mode))")
+}
+
+// ---- Paste: files, images, big and multi-line text
+do {
+    ed.setWysiwyg(true)
+    let pb = NSPasteboard.general, saved = pb.string(forType: .string)
+    tv.fileLink = { $0.lastPathComponent.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)! }
+    tv.saveImage = { _ in "Pasted%20Image.png" }
+    pb.clearContents(); pb.writeObjects([URL(fileURLWithPath: "/tmp/My Photo.png") as NSURL, URL(fileURLWithPath: "/tmp/notes.pdf") as NSURL])
+    load(""); tv.paste(nil)
+    check(text == "![My Photo](My%20Photo.png)\n[notes](notes.pdf)", "paste files: \(text.debugDescription)")
+    let img = NSImage(size: NSSize(width: 8, height: 8)); img.lockFocus(); NSColor.red.setFill(); NSRect(x: 0, y: 0, width: 8, height: 8).fill(); img.unlockFocus()
+    pb.clearContents(); pb.writeObjects([img])
+    load("a "); tv.paste(nil)
+    check(text == "a ![](Pasted%20Image.png)", "paste image: \(text.debugDescription)")
+    let multi = "# Pasted\n\n- one\n- two\n\n| a | b |\n|---|---|\n| 1 | 2 |\n"
+    pb.clearContents(); pb.setString(multi, forType: .string)
+    load("x", caret: 0); tv.paste(nil)
+    check(text == multi + "x", "multi-line paste verbatim")
+    let huge = String(repeating: "Line with **bold** and `code` and [link](u)\n", count: 5000)
+    pb.clearContents(); pb.setString(huge, forType: .string)
+    let t = Date(); load(""); tv.paste(nil)
+    check(text == huge && Date().timeIntervalSince(t) < 3, "220 KB paste in under 3s (\(Date().timeIntervalSince(t)))")
+    tv.undoManager?.undo()
+    check(text == "", "undo huge paste")
+    pb.clearContents(); if let saved { pb.setString(saved, forType: .string) }
+}
+
+// ---- Every format command undoes exactly
+for mode in [true, false] {
+    ed.setWysiwyg(mode)
+    let cmds: [(String, (Any?) -> Void)] = [
+        ("bold", tv.toggleBold), ("italic", tv.toggleItalic), ("strike", tv.toggleStrike), ("code", tv.toggleInlineCode),
+        ("link", tv.insertLink), ("bullets", tv.toggleBullets), ("numbers", tv.toggleNumbers), ("tasks", tv.toggleTasks),
+        ("done", tv.toggleTaskDone), ("quote", tv.toggleQuote), ("codeblock", tv.insertCodeBlock), ("table", tv.insertTable),
+        ("rule", tv.insertRule), ("indent", tv.indentLines), ("outdent", tv.outdentLines), ("up", tv.moveLineUp), ("down", tv.moveLineDown),
+        ("dup", tv.duplicateLine),
+    ]
+    for (name, cmd) in cmds {
+        let original = "first line\nsecond **line**\nthird"
+        load(original, caret: 0); tv.setSelectedRange(NSRange(location: 11, length: 6))
+        cmd(nil); spin()
+        tv.undoManager?.undo(); spin()
+        check(text == original, "undo \(name) (\(mode)): \(text.debugDescription)")
+    }
+}
+
+// ---- Unicode, emoji, IME
+ed.setWysiwyg(true)
+load(""); type("- 日本語 ✅ 👩🏽‍💻 café ")
+tv.insertNewline(nil); type("**émoji 🎉**")
+check(text == "- 日本語 ✅ 👩🏽‍💻 café \n- **émoji 🎉**", "unicode typing: \(text.debugDescription)")
+for _ in 0..<6 { tv.deleteBackward(nil) }
+check(text.hasSuffix("- **émo"), "deleting through emoji: \(text.debugDescription)")
+tv.setMarkedText("にほ", selectedRange: NSRange(location: 2, length: 0), replacementRange: NSRange(location: NSNotFound, length: 0)); spin()
+tv.insertText("日本", replacementRange: NSRange(location: NSNotFound, length: 0)); spin()
+check(text.hasSuffix("- **émo日本"), "IME composition commits: \(text.debugDescription)")
+
+// ---- Random fuzz: never crash, caret always valid, undo returns to the start
+for mode in [true, false] {
+    ed.setWysiwyg(mode)
+    var rng = SystemRandomNumberGenerator()
+    let start = "# Fuzz\n\n- a\n1. b\n\n| x | y |\n|---|---|\n| 1 | 2 |\n\n```\ncode\n```\n> q\n"
+    load(start)
+    tv.undoManager?.removeAllActions()
+    let pieces = ["a", " ", "*", "_", "`", "#", "-", "[", "]", "(", ")", "|", ">", "1.", "```", "$", "=", "é", "👍", "\t"]
+    for _ in 0..<500 {
+        let len = (text as NSString).length
+        switch Int.random(in: 0..<10, using: &rng) {
+        case 0...3: type(pieces.randomElement(using: &rng)!)
+        case 4: tv.insertNewline(nil)
+        case 5: tv.deleteBackward(nil)
+        case 6: let a = Int.random(in: 0...len, using: &rng); tv.setSelectedRange(NSRange(location: a, length: Int.random(in: 0...min(8, len - a), using: &rng)))
+        case 7: [tv.insertTab, tv.insertBacktab][Int.random(in: 0..<2, using: &rng)](nil)
+        case 8: [tv.toggleBold, tv.toggleBullets, tv.toggleNumbers, tv.toggleTaskDone, tv.toggleQuote, tv.indentLines, tv.outdentLines, tv.moveLineUp, tv.moveLineDown, tv.duplicateLine].randomElement(using: &rng)!(nil)
+        default: let h = NSMenuItem(); h.tag = Int.random(in: 0...6, using: &rng); tv.setHeading(h)
+        }
+        let r = sel()
+        if r.upperBound > (text as NSString).length { check(false, "caret out of bounds (\(mode))"); break }
+    }
+    spin()
+    var guardCount = 0
+    while tv.undoManager?.canUndo == true, guardCount < 5000 { tv.undoManager?.undo(); guardCount += 1 }
+    check(text == start, "fuzz undo back to start (\(mode)) after \(guardCount) undos")
+}
+
 // Fence edits must still restyle correctly with the incremental fence tracking
 ed.setWysiwyg(true)
 load("```js\nlet a = 1\n```\nafter", caret: 3)

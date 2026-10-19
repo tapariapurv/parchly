@@ -264,7 +264,10 @@ enum MD {
     // MARK: Structure
 
     /// Ranges of fenced code blocks, fence lines included. An unclosed fence runs to the end.
-    static func codeBlocks(_ ns: NSString) -> [NSRange] {
+    static func codeBlocks(_ ns: NSString) -> [NSRange] { codeBlocksDetailed(ns).blocks }
+
+    /// Code block ranges plus whether the last one is still open (no closing fence before the end).
+    static func codeBlocksDetailed(_ ns: NSString) -> (blocks: [NSRange], openAtEnd: Bool) {
         var out: [NSRange] = []
         var open: (start: Int, fence: String)?
         for m in fenceRE.matches(in: ns as String, range: NSRange(location: 0, length: ns.length)) {
@@ -280,7 +283,7 @@ enum MD {
             }
         }
         if let o = open { out.append(NSRange(location: o.start, length: ns.length - o.start)) }
-        return out
+        return (out, open != nil)
     }
 
     struct Heading: Hashable { var level: Int; var title: String; var location: Int }
