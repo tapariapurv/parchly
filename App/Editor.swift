@@ -586,7 +586,12 @@ final class EditorController: NSViewController, NSTextViewDelegate, NSTextStorag
     }
 
     func jump(to loc: Int) {
-        let r = NSRange(location: min(loc, (text as NSString).length), length: 0)
+        var r = NSRange(location: min(loc, (text as NSString).length), length: 0)
+        // Document mode hides "## ": land after it, not inside it.
+        if styler.wysiwyg, !styler.inCode(r.location) {
+            let cur = textView.line(at: r.location)
+            if r.location == cur.range.location { r.location += Styler.prefixLength(cur.text) }
+        }
         textView.setSelectedRange(r)
         if let lm = textView.layoutManager, let tc = textView.textContainer {
             let rect = lm.boundingRect(forGlyphRange: lm.glyphRange(forCharacterRange: r, actualCharacterRange: nil), in: tc)

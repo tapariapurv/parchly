@@ -14,4 +14,5 @@ if [ -x "$APP" ]; then
     grep -qF "$want" <<<"$out" || { echo "FAIL render: missing $want"; exit 1; }
   done
   echo "render: all checks passed"
+  "$APP" --selftest   # Debug build: drives documents, preview, sidebar and Home in-process
 fi
