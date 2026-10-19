@@ -23,6 +23,7 @@ enum Guide {
 
     - [x] Click a checkbox to tick it
     - [ ] Or press ⌘L
+    - [ ] Type `[]` and a space to start a task
 
     ## Tables
 

@@ -60,6 +60,15 @@ enum MD {
         return .insert("\n" + p.indent + marker + " " + (p.task != nil ? "[ ] " : ""))
     }
 
+    private static let taskShortcutRE = try! NSRegularExpression(pattern: #"^([ \t]*)(?:[-*+][ \t]+)?\[([ xX]?)\]$"#)
+
+    /// Typing Space after "[]", "[ ]" or "[x]" at the start of a line (optionally after "- ") makes a task item.
+    static func taskShortcut(_ beforeCaret: String) -> String? {
+        guard let m = taskShortcutRE.firstMatch(in: beforeCaret, range: full(beforeCaret)) else { return nil }
+        let ns = beforeCaret as NSString
+        return ns.substring(with: m.range(at: 1)) + (ns.substring(with: m.range(at: 2)).lowercased() == "x" ? "- [x] " : "- [ ] ")
+    }
+
     // MARK: Ordered list numbering
 
     /// Lines around `index` that belong to the same list (stops at an unindented non-list paragraph).

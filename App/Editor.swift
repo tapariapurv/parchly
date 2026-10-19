@@ -65,6 +65,12 @@ final class MarkdownTextView: NSTextView {
             return replace(sel, with: s + text + close, select: NSRange(location: sel.location + 1, length: (text as NSString).length))
         }
         if sel.length == 0, !styler.inCode(sel.location) {
+            let cur = line(at: sel.location)
+            if s == " ", let task = MD.taskShortcut(ns.substring(with: NSRange(location: cur.range.location, length: sel.location - cur.range.location))) {
+                breakUndoCoalescing()
+                return replace(NSRange(location: cur.range.location, length: sel.location - cur.range.location), with: task,
+                               select: NSRange(location: cur.range.location + (task as NSString).length, length: 0))
+            }
             let next = sel.location < ns.length ? ns.substring(with: NSRange(location: sel.location, length: 1)) : ""
             if Self.pairs.values.contains(s), next == s {   // type over an auto-inserted closer
                 return setSelectedRange(NSRange(location: sel.location + 1, length: 0))

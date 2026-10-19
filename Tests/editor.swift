@@ -35,6 +35,11 @@ for mode in [true, false] {   // Document mode, then Source mode
     check(sel().location == 13, "\(m) caret stays after renumber: \(sel())")
     load("- [x] done"); tv.insertNewline(nil); type("next")
     check(text == "- [x] done\n- [ ] next", "\(m) task continue")
+    for (typed, want) in [("[] buy milk", "- [ ] buy milk"), ("[ ] a", "- [ ] a"), ("[x] b", "- [x] b"), ("- [] c", "- [ ] c"), ("  [] d", "  - [ ] d")] {
+        load(""); type(typed)
+        check(text == want, "\(m) task shortcut \(typed.debugDescription): \(text.debugDescription)")
+    }
+    load("a [] b"); check(MD.taskShortcut("a []") == nil, "task shortcut only at line start")
     load("- a"); tv.insertTab(nil)
     check(text == "    - a", "\(m) tab nests")
     tv.insertBacktab(nil)
