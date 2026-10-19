@@ -69,6 +69,9 @@ enum MD {
         return ns.substring(with: m.range(at: 1)) + (ns.substring(with: m.range(at: 2)).lowercased() == "x" ? "- [x] " : "- [ ] ")
     }
 
+    /// "[ ] text" written without a list marker.
+    static func isBareTask(_ s: String) -> Bool { taskShortcut(String(s.prefix(3))) != nil && (s.count == 3 || s.dropFirst(3).first == " ") }
+
     // MARK: Ordered list numbering
 
     /// Lines around `index` that belong to the same list (stops at an unindented non-list paragraph).
@@ -137,7 +140,7 @@ enum MD {
             switch kind {
             case .bullet: return indent + "- " + body
             case .ordered: return indent + "\(n). " + body
-            case .task: return indent + "- [ ] " + body
+            case .task: return indent + "- " + (isBareTask(body) ? body : "[ ] " + body)
             }
         }
     }
@@ -145,8 +148,8 @@ enum MD {
     static func toggleTask(_ line: String) -> String {
         let ns = line as NSString
         guard let p = parse(line), !p.isQuote else {
-            let lead = leadingWhitespace(line)
-            return lead + "- [ ] " + ns.substring(from: (lead as NSString).length)
+            let lead = leadingWhitespace(line), body = ns.substring(from: (lead as NSString).length)
+            return isBareTask(body) ? toggleTask(lead + "- " + body) : lead + "- [ ] " + body
         }
         let markerEnd = (p.indent as NSString).length + (p.marker as NSString).length
         guard let done = p.task else {

@@ -54,4 +54,7 @@ let doc = "# A\n```\n# not\n```\n## B\n~~~\nopen" as NSString
 let code = MD.codeBlocks(doc)
 check(code.count == 2 && code[1].upperBound == doc.length, "code blocks")
 check(MD.headings(doc, code: code).map(\.title) == ["A", "B"], "headings skip code")
+check(MD.toggleTask("[ ] a") == "- [x] a" && MD.toggleTask("  [x] a") == "  - [ ] a", "toggle bare task")
+check(MD.toggleList(["[ ] a", "b"], .task) == ["- [ ] a", "- [ ] b"], "task list keeps bare box")
+check(!MD.isBareTask("[link] x") && !MD.isBareTask("[ ]x"), "bare task needs box + space")
 print("all checks passed")
