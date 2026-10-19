@@ -482,6 +482,7 @@ final class EditorController: NSViewController, NSTextViewDelegate, NSTextStorag
         styler.fontSize = Settings.fontSize
         let storage = NSTextStorage()
         let lm = MDLayoutManager()
+        lm.allowsNonContiguousLayout = true   // big documents only lay out what is on screen
         storage.addLayoutManager(lm)
         let container = NSTextContainer(size: NSSize(width: 600, height: CGFloat.greatestFiniteMagnitude))
         container.widthTracksTextView = true
