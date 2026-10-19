@@ -213,6 +213,35 @@ for mode in [true, false] {
     }
 }
 
+// ---- Clicking: a checkbox ticks (both modes); a link opens on plain click in Document mode, ⌘-click in Source
+func click(at charIndex: Int, length: Int = 1, _ flags: NSEvent.ModifierFlags = []) {
+    let lm = tv.layoutManager!, tc = tv.textContainer!
+    lm.ensureLayout(for: tc)
+    let r = lm.boundingRect(forGlyphRange: lm.glyphRange(forCharacterRange: NSRange(location: charIndex, length: length), actualCharacterRange: nil), in: tc)
+    let p = tv.convert(NSPoint(x: r.midX + tv.textContainerOrigin.x, y: r.midY + tv.textContainerOrigin.y), to: nil)
+    let e = NSEvent.mouseEvent(with: .leftMouseDown, location: p, modifierFlags: flags, timestamp: 0, windowNumber: win.windowNumber, context: nil, eventNumber: 0, clickCount: 1, pressure: 1)!
+    // A queued mouse-up ends AppKit's tracking loop if the click falls through to text selection.
+    NSApp.postEvent(NSEvent.mouseEvent(with: .leftMouseUp, location: p, modifierFlags: flags, timestamp: 0, windowNumber: win.windowNumber, context: nil, eventNumber: 0, clickCount: 1, pressure: 0)!, atStart: false)
+    tv.mouseDown(with: e); spin()
+}
+var opened: [String] = []
+tv.openLink = { opened.append($0) }
+for mode in [true, false] {
+    ed.setWysiwyg(mode)
+    load("intro\n- [ ] one\n    - [x] two", caret: 0)
+    click(at: 8, length: 3)
+    check(text == "intro\n- [x] one\n    - [x] two", "\(mode) click ticks the box: \(text.debugDescription)")
+    click(at: 22, length: 3)
+    check(text == "intro\n- [x] one\n    - [ ] two", "\(mode) click unticks the nested box: \(text.debugDescription)")
+    tv.undoManager?.undo(); spin()
+    check(text.hasSuffix("- [x] two"), "\(mode) undo a click")
+    opened = []
+    load("see [site](https://a.com) here\nnext", caret: 34)
+    click(at: 6, length: 2, mode ? [] : .command)
+    check(opened == ["https://a.com"], "\(mode) click opens link: \(opened)")
+}
+tv.openLink = { _ in }
+
 // ---- Unicode, emoji, IME
 ed.setWysiwyg(true)
 load(""); type("- 日本語 ✅ 👩🏽‍💻 café ")
