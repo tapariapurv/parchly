@@ -212,8 +212,14 @@ final class Styler {
             s.addAttributes([.font: NSFont.systemFont(ofSize: fontSize * 0.45), .paragraphStyle: paragraph { $0.lineSpacing = 0; $0.maximumLineHeight = self.fontSize * 0.95 }], range: full)
             return
         }
-        if inCode(r.location) {
-            s.addAttributes([.font: mono, .mdBlock: 1, .paragraphStyle: paragraph { $0.firstLineHeadIndent = pad; $0.headIndent = pad; $0.tailIndent = -pad; $0.lineSpacing = self.fontSize * 0.32 }], range: full)
+        if let block = code.first(where: { NSLocationInRange(r.location, $0) }) {
+            // Breathing room above the opening fence and below the closing one (inside the drawn panel).
+            let first = r.location == block.location, last = full.upperBound >= block.upperBound
+            s.addAttributes([.font: mono, .mdBlock: 1, .paragraphStyle: paragraph {
+                $0.firstLineHeadIndent = pad; $0.headIndent = pad; $0.tailIndent = -pad; $0.lineSpacing = self.fontSize * 0.32
+                if first { $0.paragraphSpacingBefore = self.fontSize * 0.55 }
+                if last { $0.paragraphSpacing = self.fontSize * 0.55 }
+            }], range: full)
             if MD.fenceRE.firstMatch(in: text, range: MD.full(text)) != nil {
                 s.addAttribute(.foregroundColor, value: NSColor.syntax, range: r)
             } else {

@@ -444,7 +444,8 @@ final class WindowController: NSWindowController, NSWindowDelegate, NSToolbarDel
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.html]
         panel.nameFieldStringValue = baseName + ".html"
-        let page = Renderer.page(editor.text)
+        // Standalone pages load KaTeX/Mermaid from a CDN when the note uses them (the app bundles its own copies).
+        let page = Renderer.page(editor.text).replacingOccurrences(of: "</body>", with: Renderer.exportScripts + "</body>")
         panel.beginSheetModal(for: window) { r in
             guard r == .OK, let url = panel.url else { return }
             do { try page.write(to: url, atomically: true, encoding: .utf8) } catch { self.presentError(error) }

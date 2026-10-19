@@ -137,6 +137,15 @@ enum Renderer {
         """
     }
 
+    /// Script tags that typeset math and diagrams in exported HTML.
+    static let exportScripts = """
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.1/mermaid.min.js"></script>
+    <script>document.querySelectorAll('.math').forEach(function(e){try{katex.render(e.textContent,e,{displayMode:e.classList.contains('math-display'),throwOnError:false})}catch(_){}});
+    if(document.querySelector('pre.mermaid')){mermaid.initialize({startOnLoad:false,theme:matchMedia('(prefers-color-scheme: dark)').matches?'dark':'neutral'});mermaid.run({querySelector:'pre.mermaid'});}</script>
+    """
+
     /// YAML front matter would otherwise render as a rule plus a paragraph.
     private static func frontMatterAsCode(_ s: String) -> String {
         guard s.hasPrefix("---\n"), let end = s.range(of: "\n---\n", range: s.index(s.startIndex, offsetBy: 4)..<s.endIndex) else { return s }
