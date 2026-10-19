@@ -69,9 +69,9 @@ enum SelfTest {
         for ch in "\n[] call mum" { tv.insertText(String(ch), replacementRange: NSRange(location: NSNotFound, length: 0)) }
         check(ed.text.hasSuffix("\n- [ ] call mum"), "task shortcut in a real document: \(ed.text.debugDescription)")
         check(wait { doc.isDocumentEdited }, "typing marks edited")
-        var saved = false
-        doc.save(to: note, ofType: doc.fileType!, for: .saveOperation) { _ in saved = true }
-        check(wait { saved } && (try? String(contentsOf: note, encoding: .utf8))?.hasSuffix("- [ ] call mum") == true, "save writes the file")
+        var didSave = false
+        doc.save(to: note, ofType: doc.fileType!, for: .saveOperation) { _ in didSave = true }
+        check(wait { didSave } && (try? String(contentsOf: note, encoding: .utf8))?.hasSuffix("- [ ] call mum") == true, "save writes the file")
 
         // External change reloads.
         try! Data("# Changed\n".utf8).write(to: note)
@@ -89,6 +89,20 @@ enum SelfTest {
         tv.openLink("wiki:Brand New")
         check(wait { FileManager.default.fileExists(atPath: dir.appendingPathComponent("Brand New.md").path) }, "wiki link creates the note")
         check(wait { NSDocumentController.shared.documents.contains { $0.fileURL?.lastPathComponent == "Brand New.md" } }, "wiki link opens the note")
+
+        // Sidebar "+" makes Untitled.md in the folder and opens it; pasted images are saved next to the note.
+        wc.sidebar.newFile()
+        check(wait { NSDocumentController.shared.documents.contains { $0.fileURL?.lastPathComponent == "Untitled.md" } }, "sidebar + creates and opens Untitled.md")
+        check(wait { wc.sidebar.files.contains { $0.lastPathComponent == "Untitled.md" } }, "new file appears in the sidebar")
+        let png = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 2, pixelsHigh: 2, bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+                                   colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!.representation(using: .png, properties: [:])!
+        let saved = tv.saveImage(png)
+        check(saved.map { FileManager.default.fileExists(atPath: dir.appendingPathComponent($0.removingPercentEncoding!).path) } == true, "pasted image saved beside the note: \(saved ?? "nil")")
+
+        // Find bar opens.
+        wc.find(nil)
+        check(ed.scrollView.isFindBarVisible, "find bar shows")
+        ed.scrollView.isFindBarVisible = false
 
         // Source / Document modes.
         wc.showSource(nil); check(!ed.styler.wysiwyg, "source mode")
