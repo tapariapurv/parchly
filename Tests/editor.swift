@@ -277,8 +277,11 @@ let big = String(repeating: "## Section\n\nSome **bold** text with `code` and a 
 var t0 = Date(); load(big)
 let loadTime = Date().timeIntervalSince(t0)
 tv.setSelectedRange(NSRange(location: 5000, length: 0)); t0 = Date()
-for ch in "typing fast" { tv.insertText(String(ch), replacementRange: NSRange(location: NSNotFound, length: 0)); tv.displayIfNeeded() }
-let typeTime = Date().timeIntervalSince(t0) / 11
+// Median of 31 keystrokes: robust to the machine being busy for a moment.
+let times = (0..<31).map { _ -> Double in
+    let t = Date(); tv.insertText("a", replacementRange: NSRange(location: NSNotFound, length: 0)); tv.displayIfNeeded(); return Date().timeIntervalSince(t)
+}
+let typeTime = times.sorted()[15]
 if ProcessInfo.processInfo.environment["PERF_LOOP"] != nil {   // for profiling with `sample`
     for _ in 0..<600 { tv.insertText("a", replacementRange: NSRange(location: NSNotFound, length: 0)); tv.displayIfNeeded() }
 }

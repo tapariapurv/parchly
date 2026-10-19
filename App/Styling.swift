@@ -148,9 +148,10 @@ final class Styler {
             lines.append((NSRange(location: start, length: end - start), NSRange(location: start, length: contentsEnd - start)))
             loc = end
         } while loc < range.upperBound && loc < ns.length
-        // Collapse to one attribute run first: restyling over many existing runs is quadratic (21 s → 3 s for 1 MB).
-        s.setAttributes([.font: body, .foregroundColor: NSColor.ink, .paragraphStyle: paragraph()],
-                        range: NSRange(location: lines[0].full.location, length: lines[lines.count - 1].full.upperBound - lines[0].full.location))
+        // Collapse a big span to one attribute run first: restyling over many existing runs is quadratic (21 s → 3 s for 1 MB).
+        // Small edits skip it, since every extra run edit shifts all the runs after it.
+        if lines.count > 64 { s.setAttributes([.font: body, .foregroundColor: NSColor.ink, .paragraphStyle: paragraph()],
+                        range: NSRange(location: lines[0].full.location, length: lines[lines.count - 1].full.upperBound - lines[0].full.location)) }
 
         var table = Array(repeating: 0, count: lines.count)   // 0 none, 1 header, 2 separator, 3 body
         var i = 0
