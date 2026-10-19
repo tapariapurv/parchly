@@ -4,13 +4,13 @@
     <title>Parchly</title>
     <link>https://tapariapurv.github.io/parchly/appcast.xml</link>
     <item>
-      <title>Parchly 1.1.2</title>
-      <pubDate>Mon, 19 Oct 2026 12:43:46 +0000</pubDate>
-      <sparkle:version>35</sparkle:version>
-      <sparkle:shortVersionString>1.1.2</sparkle:shortVersionString>
+      <title>Parchly 1.2.0</title>
+      <pubDate>Mon, 19 Oct 2026 15:20:14 +0000</pubDate>
+      <sparkle:version>52</sparkle:version>
+      <sparkle:shortVersionString>1.2.0</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-      <sparkle:releaseNotesLink>https://github.com/tapariapurv/parchly/releases/tag/v1.1.2</sparkle:releaseNotesLink>
-      <enclosure url="https://github.com/tapariapurv/parchly/releases/download/v1.1.2/Parchly.zip" type="application/octet-stream" sparkle:edSignature="35XUY96fDieUCpL3gqDtM4+5QiNFl2nXK1J61n3o+knPfDzk3+DtAQ/gypIfQ5LW0IirD6MCAcmEAhaLZNkVCA==" length="3913979"/>
+      <sparkle:releaseNotesLink>https://github.com/tapariapurv/parchly/releases/tag/v1.2.0</sparkle:releaseNotesLink>
+      <enclosure url="https://github.com/tapariapurv/parchly/releases/download/v1.2.0/Parchly.zip" type="application/octet-stream" sparkle:edSignature="G2TQn/TOL6N4qBeVP5FseY3P4Pp8UxSQNLV5uR24IyV115HeQTtYcHcIH83YtUjFKIUiiC30SEmqAkIKQWj3CQ==" length="4016842"/>
     </item>
   </channel>
 </rss>
