@@ -18,14 +18,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var firstLaunch: Bool { !UserDefaults.standard.bool(forKey: "launchedBefore") }
 
-    func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool { !firstLaunch }
+    /// Launch and Dock clicks show Home instead of an empty untitled document.
+    func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool { false }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        if firstLaunch {
-            UserDefaults.standard.set(true, forKey: "launchedBefore")
-            if NSDocumentController.shared.documents.isEmpty { showGuide(nil) }
+        let first = firstLaunch
+        UserDefaults.standard.set(true, forKey: "launchedBefore")
+        DispatchQueue.main.async {   // after Finder opens and window restoration
+            guard NSDocumentController.shared.documents.isEmpty else { return }
+            if first { self.showGuide(nil) } else { HomeWindowController.shared.show() }
         }
     }
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if !flag { HomeWindowController.shared.show() }
+        return false
+    }
+
+    @objc func showHome(_ sender: Any?) { HomeWindowController.shared.show() }
 
     /// Opens the guide as a fresh untitled document (closing it never asks to save).
     @objc func showGuide(_ sender: Any?) {
@@ -162,6 +172,8 @@ private func buildMenu() -> NSMenu {
         item("Minimize", #selector(NSWindow.performMiniaturize(_:)), "m"),
         item("Zoom", #selector(NSWindow.performZoom(_:))),
         sep(),
+        item("Home", #selector(AppDelegate.showHome(_:)), "h", [.command, .shift]),
+        sep(),
         item("Bring All to Front", #selector(NSApplication.arrangeInFront(_:))),
     ])
     main.addItem(window)
@@ -176,6 +188,31 @@ private func buildMenu() -> NSMenu {
 if CommandLine.arguments.contains("--render-html") {
     print(Renderer.html(String(decoding: FileHandle.standardInput.readDataToEndOfFile(), as: UTF8.self))); exit(0)
 }
+
+#if DEBUG
+// Test hook: `Parchly --snapshot home|doc [dark] < file.md > out.png` renders a window offscreen (no focus stealing).
+if let i = CommandLine.arguments.firstIndex(of: "--snapshot") {
+    _ = NSApplication.shared
+    NSApp.appearance = NSAppearance(named: CommandLine.arguments.contains("dark") ? .darkAqua : .aqua)
+    NSApp.mainMenu = buildMenu()
+    let view: NSView
+    if CommandLine.arguments[i + 1] == "home" {
+        HomeWindowController.shared.show(); HomeWindowController.shared.window!.orderOut(nil)
+        view = HomeWindowController.shared.window!.contentView!
+    } else {
+        let doc = Document()
+        doc.text = String(decoding: FileHandle.standardInput.readDataToEndOfFile(), as: UTF8.self)
+        doc.makeWindowControllers()
+        doc.controller!.document = doc
+        view = doc.controller!.window!.contentView!
+    }
+    RunLoop.main.run(until: Date().addingTimeInterval(1.5))
+    view.layoutSubtreeIfNeeded()
+    let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds)!
+    view.cacheDisplay(in: view.bounds, to: rep)
+    FileHandle.standardOutput.write(rep.representation(using: .png, properties: [:])!); exit(0)
+}
+#endif
 
 let delegate = AppDelegate()
 NSApplication.shared.delegate = delegate

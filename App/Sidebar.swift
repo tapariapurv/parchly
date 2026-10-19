@@ -19,7 +19,12 @@ final class SidebarModel: ObservableObject {
     static let extensions: Set<String> = ["md", "markdown", "mdown", "mkd", "mkdn", "mdwn"]
 
     func reload() {
-        guard let root else { files = []; needsAccess = false; return }
+        // An unsaved document lists recent files instead of a folder.
+        guard let root else {
+            needsAccess = false
+            files = NSDocumentController.shared.recentDocumentURLs.filter { Self.extensions.contains($0.pathExtension.lowercased()) }
+            return
+        }
         needsAccess = !FolderAccess.canRead(root)
         guard !needsAccess else { files = []; return }
         DispatchQueue.global(qos: .userInitiated).async {
@@ -43,7 +48,7 @@ final class SidebarModel: ObservableObject {
     }
 
     func relative(_ url: URL) -> String {
-        guard let root else { return url.lastPathComponent }
+        guard let root else { return url.deletingLastPathComponent().lastPathComponent + "/" + url.lastPathComponent }
         let base = root.standardizedFileURL.path
         return url.path.hasPrefix(base) ? String(url.path.dropFirst(base.count + 1)) : url.lastPathComponent
     }
@@ -107,7 +112,7 @@ struct SidebarView: View {
                 Divider()
                 HStack {
                     Image(systemName: "folder").foregroundStyle(.secondary)
-                    Text(model.root?.lastPathComponent ?? "Unsaved document").lineLimit(1).foregroundStyle(.secondary)
+                    Text(model.root?.lastPathComponent ?? "Recent documents").lineLimit(1).foregroundStyle(.secondary)
                     Spacer()
                     Button(action: model.newFile) { Image(systemName: "plus") }
                         .buttonStyle(.borderless)

@@ -196,7 +196,7 @@ final class WindowController: NSWindowController, NSWindowDelegate, NSToolbarDel
         sidebarItem = NSSplitViewItem(sidebarWithViewController: NSHostingController(rootView: SidebarView(model: sidebar)))
         sidebarItem.minimumThickness = 200
         sidebarItem.maximumThickness = 380
-        sidebarItem.isCollapsed = !UserDefaults.standard.bool(forKey: "sidebarShown")
+        sidebarItem.isCollapsed = !(UserDefaults.standard.object(forKey: "sidebarVisible") as? Bool ?? true)
         editorItem = NSSplitViewItem(viewController: editor)
         previewItem = NSSplitViewItem(viewController: preview)
         for item in [editorItem!, previewItem!] { item.canCollapse = true; item.minimumThickness = 260 }
@@ -252,6 +252,7 @@ final class WindowController: NSWindowController, NSWindowDelegate, NSToolbarDel
             editor.setText(doc.text)
             render()
             urlChanged()
+            HomeWindowController.shared.hide()
             DispatchQueue.main.async { self.focusContent() }
         }
     }
@@ -263,7 +264,7 @@ final class WindowController: NSWindowController, NSWindowDelegate, NSToolbarDel
         window?.subtitle = root?.lastPathComponent ?? ""
         preview.setBase(root)
         if editor.styler.baseURL != root { editor.styler.baseURL = root; editor.textView.textStorage.map(editor.styler.restyleAll) }
-        if sidebar.root != root { sidebar.root = root; sidebar.reload() }
+        if sidebar.root != root || root == nil { sidebar.root = root; sidebar.reload() }
     }
 
     // MARK: Rendering
@@ -278,7 +279,8 @@ final class WindowController: NSWindowController, NSWindowDelegate, NSToolbarDel
     private func render(then: (() -> Void)? = nil) {
         renderWork?.cancel()
         let text = editor.text
-        preview.update(text, then: then)
+        // The hidden preview is rendered when it is shown (or printed), keeping typing cheap.
+        if showsPreview || then != nil { preview.update(text, then: then) }
         sidebar.headings = MD.headings(text as NSString, code: editor.styler.code)
     }
 
@@ -492,11 +494,12 @@ final class WindowController: NSWindowController, NSWindowDelegate, NSToolbarDel
 
     func windowWillClose(_ notification: Notification) {
         window?.saveFrame(usingName: "ParchlyWindow")
-        UserDefaults.standard.set(!sidebarItem.isCollapsed, forKey: "sidebarShown")
+        UserDefaults.standard.set(!sidebarItem.isCollapsed, forKey: "sidebarVisible")
+        HomeWindowController.showIfNoDocuments()
     }
 
     func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        [.flexibleSpace, Self.modeItem, .flexibleSpace, Self.formatItem, Self.searchItem, Self.previewItem, Self.moreItem]
+        [.toggleSidebar, .sidebarTrackingSeparator, .flexibleSpace, Self.modeItem, .flexibleSpace, Self.formatItem, Self.searchItem, Self.previewItem, Self.moreItem]
     }
 
     func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
@@ -542,6 +545,7 @@ final class WindowController: NSWindowController, NSWindowDelegate, NSToolbarDel
             }
             menu.addItem(themeItem)
             menu.addItem(.separator())
+            menu.addItem(NSMenuItem(title: "Home", action: #selector(AppDelegate.showHome(_:)), keyEquivalent: ""))
             menu.addItem(NSMenuItem(title: "Check for Updates…", action: #selector(AppDelegate.checkForUpdates(_:)), keyEquivalent: ""))
             menu.addItem(NSMenuItem(title: "Settings…", action: #selector(AppDelegate.showSettings(_:)), keyEquivalent: ""))
             item.menu = menu
