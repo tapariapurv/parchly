@@ -196,6 +196,23 @@ for mode in [true, false] {
     }
 }
 
+// ---- Wrapped list items hang under their text, not under the marker
+for mode in [true, false] {
+    ed.setWysiwyg(mode)
+    for item in ["- [ ] ", "- [x] ", "- ", "12. ", "    - [ ] ", "> "] {
+        let line = item + String(repeating: "wrapping words ", count: 30)
+        load(line, caret: 0); tv.layoutManager!.ensureLayout(for: tv.textContainer!)
+        let lm = tv.layoutManager!, first = (item as NSString).length
+        let x0 = lm.location(forGlyphAt: lm.glyphIndexForCharacter(at: first)).x
+        var second: CGFloat?
+        lm.enumerateLineFragments(forGlyphRange: NSRange(location: 0, length: lm.numberOfGlyphs)) { rect, _, _, g, stop in
+            if g.location > 0 { second = rect.minX + lm.location(forGlyphAt: g.location).x; stop.pointee = true }
+        }
+        let first0 = lm.lineFragmentRect(forGlyphAt: 0, effectiveRange: nil).minX
+        check(second != nil && abs(first0 + x0 - second!) < 1.5, "\(mode ? "doc" : "source") hang for \(item.debugDescription): text at \(first0 + x0), wrap at \(second ?? -1)")
+    }
+}
+
 // ---- Unicode, emoji, IME
 ed.setWysiwyg(true)
 load(""); type("- 日本語 ✅ 👩🏽‍💻 café ")

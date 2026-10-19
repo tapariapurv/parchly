@@ -19,7 +19,9 @@ enum Renderer {
         defer { cmark_node_free(doc) }
         guard let out = cmark_render_html(doc, options, cmark_parser_get_syntax_extensions(parser)) else { return "" }
         defer { free(out) }
-        return restoreMath(polish(String(cString: out)), math)
+        // No space between a task's box and its text (the box has its own margin; strikethrough starts at the text).
+        let html = String(cString: out).replacingOccurrences(of: #"disabled="" />\s+"#, with: #"disabled="" />"#, options: .regularExpression)
+        return restoreMath(polish(html), math)
     }
 
     // MARK: Extensions beyond GFM
@@ -173,8 +175,10 @@ enum Renderer {
     hr{border:0;border-top:1px solid var(--line);margin:2em 0}
     ul,ol{padding-left:1.6em}li{margin:.2em 0}li>p{margin:0}
     li::marker{color:var(--marker)}
-    li:has(>input[type=checkbox]){list-style:none;margin-left:-1.4em}
-    li>input[type=checkbox]{appearance:none;width:1.1em;height:1.1em;margin:0 .55em 0 0;vertical-align:-.15em;border:1.5px solid var(--faint);border-radius:.28em}
+    li:has(>input[type=checkbox]){list-style:none;margin-left:-1.4em;padding-left:1.65em}
+    li:has(>input:checked)>:is(ul,ol){display:inline-block;width:100%;color:var(--fg)}
+    li>input[type=checkbox]+p{display:inline}
+    li>input[type=checkbox]{appearance:none;width:1.1em;height:1.1em;margin:0 .55em 0 -1.65em;vertical-align:-.15em;border:1.5px solid var(--faint);border-radius:.28em}
     li>input[type=checkbox]:checked{background:color-mix(in srgb,var(--accent) 18%,transparent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5' fill='none' stroke='%23307afe' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/100% no-repeat;border-color:var(--accent)}
     li:has(>input:checked){color:var(--muted);text-decoration:line-through}
     table{border-collapse:collapse;display:block;overflow:auto;width:max-content;max-width:100%}

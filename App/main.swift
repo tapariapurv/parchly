@@ -205,6 +205,8 @@ if let i = CommandLine.arguments.firstIndex(of: "--snapshot") {
         doc.text = String(decoding: FileHandle.standardInput.readDataToEndOfFile(), as: UTF8.self)
         doc.makeWindowControllers()
         doc.controller!.document = doc
+        if CommandLine.arguments.contains("source") { doc.controller!.showSource(nil) }
+        if CommandLine.arguments.contains("preview") != UserDefaults.standard.bool(forKey: "preview") { doc.controller!.togglePreview(nil) }
         view = doc.controller!.window!.contentView!
     }
     RunLoop.main.run(until: Date().addingTimeInterval(1.5))

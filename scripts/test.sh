@@ -13,6 +13,7 @@ if [ -x "$APP" ]; then
   for want in 'alert-note' 'math-inline' '<mark>m</mark>' 'href="W.md">L<' '🚀' 'tok-kw'; do
     grep -qF "$want" <<<"$out" || { echo "FAIL render: missing $want"; exit 1; }
   done
+  printf -- '- [x] a\n\n- [ ] b\n' | "$APP" --render-html | grep -qF 'disabled="" /><p>a' || { echo "FAIL render: gap after task box"; exit 1; }
   echo "render: all checks passed"
   "$APP" --selftest   # Debug build: drives documents, preview, sidebar and Home in-process
 fi

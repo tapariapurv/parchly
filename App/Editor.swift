@@ -175,7 +175,7 @@ final class MarkdownTextView: NSTextView {
 
     override func insertNewline(_ sender: Any?) {
         let sel = selectedRange()
-        guard sel.length == 0, !hasMarkedText(), !NSEvent.modifierFlags.contains(.shift) else { return super.insertNewline(sender) }
+        guard sel.length == 0, !hasMarkedText(), NSApp.currentEvent?.modifierFlags.contains(.shift) != true else { return super.insertNewline(sender) }
         breakUndoCoalescing()
         let cur = line(at: sel.location)
         if styler.inCode(sel.location) { return codeNewline(sel, cur) }

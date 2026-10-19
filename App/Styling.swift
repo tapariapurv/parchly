@@ -303,7 +303,9 @@ final class Styler {
             return
         }
         if let m = Self.quoteRE.firstMatch(in: text, range: MD.full(text)) {
-            s.addAttributes([.mdBlock: 2, .paragraphStyle: paragraph { $0.firstLineHeadIndent = pad; $0.headIndent = pad }], range: full)
+            // Source mode shows "> ", so wrapped lines hang under the text after it.
+            let hang = doc ? pad : pad + (ns.substring(with: NSRange(location: r.location, length: m.range.length)) as NSString).size(withAttributes: [.font: body]).width
+            s.addAttributes([.mdBlock: 2, .paragraphStyle: paragraph { $0.firstLineHeadIndent = pad; $0.headIndent = hang }], range: full)
             hide(NSRange(location: r.location, length: m.range.length))
             if let a = Self.alertRE.firstMatch(in: text, range: MD.full(text)) {   // GitHub alert title
                 let tag = NSRange(location: r.location + a.range.location, length: a.range.length)
@@ -347,8 +349,14 @@ final class Styler {
                 visible = p.indent + "•  "
                 s.addAttribute(.kern, value: fontSize * 0.25, range: markerRange)
             }
-            let markerFont = p.number != nil && doc ? NSFont.systemFont(ofSize: fontSize * 0.88) : body
-            let hang = (visible as NSString).size(withAttributes: [.font: markerFont]).width + (p.task == nil && doc ? fontSize * 0.2 : 0)
+            // Wrapped lines hang exactly under the text: mirror the widths and kerning set above.
+            func w(_ t: String, _ f: NSFont? = nil) -> CGFloat { (t as NSString).size(withAttributes: [.font: f ?? body]).width }
+            let tail = (text as NSString).substring(from: indentLen + (p.marker as NSString).length)
+            let hang: CGFloat
+            if !doc { hang = w(visible) }
+            else if p.task != nil { hang = w(p.indent + "[]" + tail.drop { $0 != "]" }.dropFirst().prefix { $0 == " " || $0 == "\t" }) + 3 * fontSize * 0.55 }
+            else if p.number != nil { hang = w(p.indent) + w(p.marker, .systemFont(ofSize: fontSize * 0.88)) + CGFloat((p.marker as NSString).length) * fontSize * 0.2 + w(String(tail.prefix { $0 == " " || $0 == "\t" })) }
+            else { hang = w(p.indent + "•" + tail.prefix { $0 == " " || $0 == "\t" }) + fontSize * 0.25 }
             s.addAttribute(.paragraphStyle, value: paragraph { $0.headIndent = hang; $0.paragraphSpacingBefore = self.fontSize * 0.28 }, range: full)
             inline(s, ns, NSRange(location: prefix.upperBound, length: r.length - p.length), reveal: reveal)
             return
