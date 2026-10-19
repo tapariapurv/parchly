@@ -110,6 +110,17 @@ enum SelfTest {
         Theme.id = theme
         wc.biggerFont(nil); check(Settings.fontSize == size + 1, "bigger text"); wc.actualSizeFont(nil); Settings.fontSize = size
 
+        // Settings reach the open editor, then restore.
+        let prefs = (Settings.formatBar, Settings.lineNumbers, Settings.spellCheck)
+        let lm = tv.layoutManager as? MDLayoutManager
+        Settings.formatBar = false; check(ed.formatBar.isHidden, "hide formatting bar")
+        Settings.formatBar = true; check(!ed.formatBar.isHidden, "show formatting bar")
+        Settings.spellCheck = !prefs.2; check(tv.isContinuousSpellCheckingEnabled == !prefs.2, "spelling setting")
+        wc.showSource(nil); Settings.lineNumbers = true; check(lm?.lineNumbers == true, "line numbers in Source mode")
+        wc.showDocument(nil); check(lm?.lineNumbers == false, "no line numbers in Document mode")
+        Settings.fontSize = 20; check(ed.styler.fontSize == 20 && (tv.textStorage?.attribute(.font, at: 0, effectiveRange: nil) as? NSFont).map { $0.pointSize >= 20 } == true, "text size applies")
+        (Settings.formatBar, Settings.lineNumbers, Settings.spellCheck) = prefs
+
         // Every formatting-bar button and every menu command: works on a selection and undoes exactly.
         wc.showDocument(nil)
         let original = "alpha beta\ngamma delta\n"

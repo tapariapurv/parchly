@@ -9,6 +9,7 @@ extension NSAttributedString.Key {
     static let mdHeading = NSAttributedString.Key("mdHeading")   // heading level, for the margin badge
     static let mdTableRow = NSAttributedString.Key("mdTableRow") // 1 header, 2 separator, 3 body
     static let mdPipe = NSAttributedString.Key("mdPipe")
+    static let mdColumns = NSAttributedString.Key("mdColumns") // table column edges ([CGFloat]) for the grid
     static let mdInlineCode = NSAttributedString.Key("mdInlineCode")   // pill: 1 inline code, 2 ==highlight==
     static let mdImage = NSAttributedString.Key("mdImage")             // ImageBox drawn under its line
 }
@@ -154,6 +155,7 @@ final class Styler {
         }
         // Document mode lays table cells on shared tab stops so columns align whatever the source spacing.
         var stops = Array(repeating: [CGFloat](), count: lines.count)
+        var aligns = Array(repeating: [NSTextAlignment](), count: lines.count)
         if wysiwyg {
             var k = 0
             while k < lines.count {
@@ -171,7 +173,10 @@ final class Styler {
                 let gap = fontSize * 0.75
                 var x = gap, columnStops = [x]
                 for w in widths { x += w + 2 * gap; columnStops.append(x) }
-                for row in k..<end { stops[row] = columnStops }
+                // ":--", "--:" and ":-:" in the separator row align the column.
+                let columnAligns = (k..<end).first { table[$0] == 2 }.map { MD.cells(ns.substring(with: lines[$0].content)).map { c -> NSTextAlignment in
+                    c.hasSuffix(":") ? (c.hasPrefix(":") ? .center : .right) : .left } } ?? []
+                for row in k..<end { stops[row] = columnStops; aligns[row] = columnAligns }
                 k = end
             }
         }
@@ -185,7 +190,7 @@ final class Styler {
             setext[k - 1] = (t as NSString).substring(with: m.range(at: 1)).hasPrefix("=") ? 1 : 2
             setext[k] = -1
         }
-        for (k, line) in lines.enumerated() { styleLine(s, ns, line.full, line.content, table: table[k], stops: stops[k], setext: setext[k]) }
+        for (k, line) in lines.enumerated() { styleLine(s, ns, line.full, line.content, table: table[k], stops: stops[k], aligns: aligns[k], setext: setext[k]) }
         // We run after NSTextStorage's own fixing pass, so do font fallback (e.g. ⌘ in New York) ourselves.
         s.fixAttributes(in: NSRange(location: lines[0].full.location, length: lines[lines.count - 1].full.upperBound - lines[0].full.location))
     }
@@ -199,7 +204,7 @@ final class Styler {
         return p
     }
 
-    private func styleLine(_ s: NSTextStorage, _ ns: NSString, _ full: NSRange, _ r: NSRange, table: Int, stops: [CGFloat] = [], setext: Int = 0) {
+    private func styleLine(_ s: NSTextStorage, _ ns: NSString, _ full: NSRange, _ r: NSRange, table: Int, stops: [CGFloat] = [], aligns: [NSTextAlignment] = [], setext: Int = 0) {
         s.setAttributes([.font: body, .foregroundColor: NSColor.ink, .paragraphStyle: paragraph()], range: full)
         let text = ns.substring(with: r)
         let doc = wysiwyg
@@ -279,10 +284,15 @@ final class Styler {
                 return
             }
             s.addAttributes([.font: table == 1 ? serif(fontSize, .semibold) : body, .paragraphStyle: paragraph {
-                $0.tabStops = stops.map { NSTextTab(textAlignment: .left, location: $0) }
+                let gap = self.fontSize * 0.75
+                $0.tabStops = stops.enumerated().map { c, x in
+                    guard c + 1 < stops.count, c < aligns.count, aligns[c] != .left else { return NSTextTab(textAlignment: .left, location: x) }
+                    let w = stops[c + 1] - x - 2 * gap
+                    return NSTextTab(textAlignment: aligns[c], location: aligns[c] == .right ? x + w : x + w / 2)
+                }
                 $0.lineSpacing = self.fontSize * 0.45
                 $0.paragraphSpacingBefore = self.fontSize * 0.2
-            }], range: full)
+            }, .mdColumns: stops], range: full)
             if table == 2 { s.addAttribute(.foregroundColor, value: NSColor.syntax, range: r) }
             inline(s, ns, r, reveal: reveal)
             // Unescaped pipes become tabs; the padding around them collapses.
@@ -540,9 +550,9 @@ final class MDLayoutManager: NSLayoutManager, NSLayoutManagerDelegate {
                 enumerateLineFragments(forGlyphRange: glyphRange(forCharacterRange: eff, actualCharacterRange: nil)) { frag, _, _, glyphs, _ in
                     let lineChars = self.characterRange(forGlyphRange: glyphs, actualGlyphRange: nil)
                     guard let row = s.attribute(.mdTableRow, at: lineChars.location, effectiveRange: nil) as? Int else { return }
-                    let stops = (s.attribute(.paragraphStyle, at: lineChars.location, effectiveRange: nil) as? NSParagraphStyle)?.tabStops ?? []
-                    guard let gap = stops.first?.location else { return }
-                    let xs = stops.map { (origin.x + tc.lineFragmentPadding + $0.location - gap).rounded() }
+                    let stops = s.attribute(.mdColumns, at: lineChars.location, effectiveRange: nil) as? [CGFloat] ?? []
+                    guard let gap = stops.first else { return }
+                    let xs = stops.map { (origin.x + tc.lineFragmentPadding + $0 - gap).rounded() }
                     guard let minX = xs.first, let maxX = xs.last, xs.count >= 2 else { return }
                     let f = frag.offsetBy(dx: origin.x, dy: origin.y)
                     if row == 1 {
