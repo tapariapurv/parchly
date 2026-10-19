@@ -25,17 +25,18 @@ Requires macOS 14 Sonoma or later (Apple silicon or Intel). To uninstall, drag P
 
 ## Features
 
+- **Home**: new document, open, new from clipboard, the guide and your recent documents in one compact window. It appears at launch and when you close the last document, or press ⇧⌘H. Drop files on it to open them.
 - **Document mode** (looks like Downright, edits like Bear): Markdown syntax hides as you read and comes back on the line you're editing. Serif page, H1–H6 margin badge, • bullets, clickable checkboxes, quote bars, table grids, inline code pills and images.
 - **Formatting bar**: a floating Liquid Glass bar with every Markdown tool (headings, bold, italic, strike, code, link, lists, tasks, quote, code block, table, divider). You don't need to know the syntax. Toggle it with ⇧⌘B.
 - **Source mode** (⌃⌘2): monospace Markdown, with optional line numbers in Settings.
 - **Side-by-side preview** (⌘\): GitHub-style rendering with KaTeX math, Mermaid diagrams and colour-coded code, scroll-synced and theme-aware.
-- **Smart editing**: list continuation and renumbering, Tab/Shift-Tab nesting, table cell navigation with auto-formatting, wrap-on-type (select text and type `*`, `_`, `` ` ``, `~`, `=`), bracket auto-pairing, paste a URL to make a link.
+- **Smart editing**: type `[]` and a space to start a task, list continuation and renumbering, Tab/Shift-Tab nesting, table cell navigation with auto-formatting, wrap-on-type (select text and type `*`, `_`, `` ` ``, `~`, `=`), bracket auto-pairing, paste a URL to make a link.
 - **Cross-references**: `[[Note]]`, `[[Note|Label]]`, `[[Note#Heading]]` and `[text](#heading)`. ⌘-click follows a link and creates missing notes.
 - **Themes**: Paper (auto light/dark, matching Downright), Paper Light, Warm Dark, Nord, Solarized Light/Dark, High Contrast, Sepia, Forest and Midnight.
 - **Settings** (⌘,): theme, text size, formatting bar, line numbers, spelling, updates.
 - **Automatic updates** via Sparkle (signed appcast), plus **Check for Updates…**.
 - **Quick Look extension**: press Space on any `.md` in Finder.
-- **Files & outline**: ⌘P finds any Markdown file in the folder, and ⇧⌘O jumps to a heading.
+- **Files & outline sidebar** (on by default, toolbar button or ⌃⌘S): ⌘P finds any Markdown file in the folder, and ⇧⌘O jumps to a heading.
 - **Plain files only**: no database, sandboxed, autosave, Versions, Rename/Move, external-change reload, export to PDF/HTML, Print.
 - **Getting started**: a built-in guide opens on first launch (Help › Markdown Guide).
 
@@ -68,6 +69,7 @@ Requires macOS 14 Sonoma or later (Apple silicon or Intel). To uninstall, drag P
 | Go to file / heading | ⌘P / ⇧⌘O | Find / Replace | ⌘F / ⌥⌘F |
 | Toggle sidebar | ⌃⌘S | Reveal in Finder | ⌥⌘R |
 | Export PDF / HTML | File menu | Print | ⌥⌘P |
+| Home | ⇧⌘H | | |
 
 All standard macOS text-editing shortcuts (word and line navigation, Emacs bindings, undo/redo) work too.
 
@@ -125,6 +127,7 @@ This runs three suites:
 | `App/Editor.swift` | `NSTextView` subclass (smart keys, format commands) and the editor controller |
 | `App/Window.swift` | `NSDocument`, window/toolbar, preview (`WKWebView`), export and print |
 | `App/Sidebar.swift` | SwiftUI files & outline sidebar |
+| `App/Home.swift` | Home window: actions, recent documents, drop to open |
 | `Shared/Renderer.swift` | cmark-gfm → HTML plus CSS, shared by the preview and Quick Look |
 | `QuickLook/` | Data-based Quick Look preview extension |
 | `docs/` | Website (GitHub Pages) |
