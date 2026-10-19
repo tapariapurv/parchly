@@ -58,6 +58,14 @@ enum FormatBar {
         return glass(stack, cornerRadius: 20)
     }
 
+    /// Aims the buttons at this editor, so they work even while the sidebar or Find field has focus.
+    static func connect(_ bar: NSView, to tv: NSTextView) {
+        for v in bar.subviews {
+            if let b = v as? NSButton, b.target == nil { b.target = tv }
+            connect(v, to: tv)
+        }
+    }
+
     private static func button(_ symbol: String, _ tip: String, _ action: Selector) -> NSButton {
         let b = NSButton(image: NSImage(systemSymbolName: symbol, accessibilityDescription: tip)!, target: nil, action: action)
         b.isBordered = false
@@ -96,9 +104,15 @@ final class HeadingMenu: NSObject {
             let item = NSMenuItem(title: title, action: #selector(MarkdownTextView.setHeading(_:)), keyEquivalent: "\(level)")
             item.keyEquivalentModifierMask = .command
             item.tag = level
+            item.target = sender.window.flatMap { Self.editor(in: $0.contentView) }
             menu.addItem(item)
         }
         menu.popUp(positioning: nil, at: NSPoint(x: 0, y: sender.bounds.height + 6), in: sender)
+    }
+
+    static func editor(in v: NSView?) -> MarkdownTextView? {
+        guard let v else { return nil }
+        return v as? MarkdownTextView ?? v.subviews.lazy.compactMap { editor(in: $0) }.first
     }
 }
 

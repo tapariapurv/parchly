@@ -28,7 +28,18 @@ enum SelfTest {
         return out ?? ""
     }
 
-    static func run() -> Never {
+    /// Menu commands that open panels, other apps or quit; everything else is fired at a live document.
+    static let skipped: Set<String> = ["orderFrontStandardAboutPanel:", "checkForUpdates:", "showSettings:", "hide:", "hideOtherApplications:",
+        "unhideAllApplications:", "terminate:", "clearRecentDocuments:", "newDocument:", "openDocument:", "performClose:", "save:", "saveDocument:",
+        "duplicate:", "duplicateDocument:", "renameDocument:", "moveDocument:", "rename:", "move:", "revertToSaved:", "revertDocumentToSaved:", "revealInFinder:", "exportHTML:", "exportPDF:", "printMarkdown:", "performMiniaturize:",
+        "performZoom:", "arrangeInFront:", "showGuide:", "showHome:", "showGuessPanel:", "checkSpelling:", "toggleContinuousSpellChecking:",
+        "cut:", "copy:", "paste:", "delete:", "undo:", "redo:", "performFindPanelAction:", "submenuAction:"]
+
+    static func menuItems(_ menu: NSMenu) -> [NSMenuItem] {
+        menu.items.flatMap { $0.submenu.map(menuItems) ?? ($0.action == nil ? [] : [$0]) }
+    }
+
+    static func run(menu: NSMenu) -> Never {
         _ = NoRecentsController()
         _ = NSApplication.shared
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("parchly-selftest-\(UUID().uuidString)")
@@ -98,6 +109,48 @@ enum SelfTest {
         for t in Theme.choices { Theme.id = t.id; spin(0.01) }
         Theme.id = theme
         wc.biggerFont(nil); check(Settings.fontSize == size + 1, "bigger text"); wc.actualSizeFont(nil); Settings.fontSize = size
+
+        // Every formatting-bar button and every menu command: works on a selection and undoes exactly.
+        wc.showDocument(nil)
+        let original = "alpha beta\ngamma delta\n"
+        func fire(_ name: String, _ perform: () -> Void) {
+            ed.setText(original); tv.setSelectedRange(NSRange(location: 6, length: 4)); spin()
+            perform(); spin()
+            check(tv.selectedRange().upperBound <= (ed.text as NSString).length, "\(name): caret in bounds")
+            if ed.text != original {
+                doc.undoManager?.undo(); spin()
+                check(ed.text == original, "\(name) undoes: \(ed.text.debugDescription)")
+            }
+        }
+        var buttons: [NSButton] = []
+        func collect(_ v: NSView) { if let b = v as? NSButton { buttons.append(b) }; v.subviews.forEach(collect) }
+        collect(ed.formatBar)
+        check(buttons.count == 13, "format bar has 13 buttons: \(buttons.count)")
+        for b in buttons where b.target is MarkdownTextView {
+            fire(b.toolTip ?? "button") { b.performClick(nil) }
+        }
+        let changes = buttons.filter { b in b.target is MarkdownTextView }.map { b -> Bool in
+            ed.setText(original); tv.setSelectedRange(NSRange(location: 6, length: 4)); b.performClick(nil); return ed.text != original
+        }
+        check(!changes.contains(false), "every format button edits the text: \(changes)")
+        let items = menuItems(menu)
+        var fired = 0
+        for item in items {
+            // Window-list entries carry their own target.
+            guard let action = item.action, item.target == nil, !skipped.contains(NSStringFromSelector(action)) else { continue }
+            let split = wc.window?.contentViewController
+            let target: AnyObject? = tv.responds(to: action) ? tv : wc.responds(to: action) ? wc : split?.responds(to: action) == true ? split : nil
+            guard let target else { check(false, "no target for menu \(item.title)"); continue }
+            fired += 1
+            fire("menu \(item.title)") {
+                NSApp.sendAction(action, to: target, from: item)
+                if target === wc || target === split, item.title != "Bigger", item.title != "Smaller" { spin(); NSApp.sendAction(action, to: target, from: item) }   // toggles back
+            }
+        }
+        Settings.fontSize = size
+        check(fired > 35, "fired \(fired) menu commands")
+        wc.showDocument(nil)
+        if UserDefaults.standard.bool(forKey: "preview") != wasShown { wc.togglePreview(nil) }
 
         // Closing every document brings Home back; opening one hides it.
         for d in NSDocumentController.shared.documents { d.updateChangeCount(.changeCleared); d.close() }

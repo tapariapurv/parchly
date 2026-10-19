@@ -190,7 +190,7 @@ if CommandLine.arguments.contains("--render-html") {
 }
 
 #if DEBUG
-if CommandLine.arguments.contains("--selftest") { SelfTest.run() }
+if CommandLine.arguments.contains("--selftest") { _ = NSApplication.shared; SelfTest.run(menu: buildMenu()) }
 // Test hook: `Parchly --snapshot home|doc [dark] < file.md > out.png` renders a window offscreen (no focus stealing).
 if let i = CommandLine.arguments.firstIndex(of: "--snapshot") {
     _ = NSApplication.shared

@@ -538,6 +538,7 @@ final class EditorController: NSViewController, NSTextViewDelegate, NSTextStorag
         let shade = ShadeView()
         let statusPill = glass(status, cornerRadius: 10)
         formatBar.isHidden = !Settings.formatBar
+        FormatBar.connect(formatBar, to: textView)
 
         let root = NSView()
         for v in [scrollView, shade, statusPill, outline, formatBar] as [NSView] { v.translatesAutoresizingMaskIntoConstraints = false; root.addSubview(v) }
