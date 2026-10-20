@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="warm-dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -9,7 +9,7 @@
 <link rel="canonical" href="https://tapariapurv.github.io/parchly/">
 <link rel="icon" href="assets/icon.png">
 <link rel="apple-touch-icon" href="assets/icon-512.png">
-<meta name="theme-color" content="#f7f4ee">
+<meta name="theme-color" content="#171614">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Parchly">
 <meta property="og:title" content="Parchly — the calm Markdown editor for Mac">
@@ -20,7 +20,7 @@
 <meta name="twitter:image" content="https://tapariapurv.github.io/parchly/assets/og.png">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
- {"@type":"SoftwareApplication","name":"Parchly","applicationCategory":"ProductivityApplication","applicationSubCategory":"Markdown editor","operatingSystem":"macOS 14 or later","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"license":"https://opensource.org/licenses/MIT","url":"https://tapariapurv.github.io/parchly/","downloadUrl":"https://github.com/tapariapurv/parchly/releases/latest","image":"https://tapariapurv.github.io/parchly/assets/document.jpg","softwareVersion":"1.1.0","description":"A free, native, open-source Markdown editor for macOS with a page-like Document mode, a formatting bar, nine themes, wiki-link cross-references, math, Mermaid diagrams, a live preview and a Finder Quick Look extension.","featureList":["WYSIWYG-style Markdown editing that saves plain .md files","Formatting bar for people who don't know Markdown syntax","CommonMark and GitHub Flavored Markdown: tables, task lists, footnotes, strikethrough, autolinks","Math (KaTeX), Mermaid diagrams, GitHub alerts, ==highlights==, :emoji:","[[Wiki links]] and heading cross-references","Quick Look previews of .md files in Finder","Nine themes, light and dark","Automatic updates","Export to PDF and HTML"],"codeRepository":"https://github.com/tapariapurv/parchly"},
+ {"@type":"SoftwareApplication","name":"Parchly","applicationCategory":"ProductivityApplication","applicationSubCategory":"Markdown editor","operatingSystem":"macOS 14 or later","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"license":"https://opensource.org/licenses/MIT","url":"https://tapariapurv.github.io/parchly/","downloadUrl":"https://github.com/tapariapurv/parchly/releases/latest","image":"https://tapariapurv.github.io/parchly/assets/document.jpg","softwareVersion":"1.2.0","description":"A free, native, open-source Markdown editor for macOS with a page-like Document mode, a formatting bar, nine themes, wiki-link cross-references, math, Mermaid diagrams, a live preview and a Finder Quick Look extension.","featureList":["WYSIWYG-style Markdown editing that saves plain .md files","Formatting bar for people who don't know Markdown syntax","CommonMark and GitHub Flavored Markdown: tables, task lists, footnotes, strikethrough, autolinks","Math (KaTeX), Mermaid diagrams, GitHub alerts, ==highlights==, :emoji:","[[Wiki links]] and heading cross-references","Quick Look previews of .md files in Finder","Nine themes, light and dark","Automatic updates","Export to PDF and HTML"],"codeRepository":"https://github.com/tapariapurv/parchly"},
  {"@type":"FAQPage","mainEntity":[
   {"@type":"Question","name":"Is Parchly free?","acceptedAnswer":{"@type":"Answer","text":"Yes. Parchly is free and open source under the MIT license, with no account, subscription or tracking."}},
   {"@type":"Question","name":"What is a good free Markdown editor for Mac?","acceptedAnswer":{"@type":"Answer","text":"Parchly is a free, native macOS Markdown editor that shows your notes like a finished page, has a formatting bar so you don't need to know the syntax, supports GitHub Flavored Markdown, math and Mermaid, and previews .md files in Finder with Quick Look."}},
@@ -30,289 +30,553 @@
  ]}
 ]}
 </script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500&family=Newsreader:opsz,wght@6..72,400;6..72,600&display=swap">
+<script>
+// Apply the saved theme before first paint. Warm Dark is the default, like the app at night.
+(() => { let t = 'warm-dark'; try { t = localStorage.getItem('parchly-theme') || t; } catch {}
+  if (t === 'system') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'warm-dark' : 'paper-light';
+  document.documentElement.dataset.theme = t; })();
+</script>
 <style>
-:root{--bg:#f7f4ee;--surface:#fffdfa;--ink:#292522;--heading:#181513;--muted:#685f56;--faint:#8b8178;--rule:#d9d2c8;--accent:#307afe;--link:#245fb8;--tan:#c9b294;--band:#ebe7e0;
+:root,[data-theme=warm-dark]{--bg:#171614;--surface:#24211e;--ink:#e3ddd5;--heading:#f4eee5;--muted:#aca297;--faint:#7f776f;--rule:#3d3832;--accent:#6ea8ff;--link:#8ab8ff;--tan:#8a6a48;--sh:rgba(0,0,0,.6);color-scheme:dark}
+[data-theme=paper-light]{--bg:#f7f4ee;--surface:#fffdfa;--ink:#292522;--heading:#181513;--muted:#685f56;--faint:#8b8178;--rule:#d9d2c8;--accent:#307afe;--link:#245fb8;--tan:#c9b294;--sh:rgba(60,45,25,.28);color-scheme:light}
+[data-theme=nord]{--bg:#2e3440;--surface:#3b4252;--ink:#d8dee9;--heading:#eceff4;--muted:#aeb8c8;--faint:#7b869a;--rule:#4c566a;--accent:#88c0d0;--link:#88c0d0;--tan:#5e81ac;--sh:rgba(0,0,0,.5);color-scheme:dark}
+[data-theme=solarized-light]{--bg:#fdf6e3;--surface:#eee8d5;--ink:#526b72;--heading:#3b4f55;--muted:#657b83;--faint:#93a1a1;--rule:#e0d8c0;--accent:#268bd2;--link:#268bd2;--tan:#b58900;--sh:rgba(80,60,20,.22);color-scheme:light}
+[data-theme=high-contrast]{--bg:#ffffff;--surface:#f2f2f2;--ink:#000000;--heading:#000000;--muted:#2a2a2a;--faint:#4a4a4a;--rule:#bbbbbb;--accent:#0000cc;--link:#0000cc;--tan:#666666;--sh:rgba(0,0,0,.3);color-scheme:light}
+[data-theme=sepia]{--bg:#f3e9d7;--surface:#faf3e6;--ink:#3f3226;--heading:#2c2118;--muted:#6e5a45;--faint:#97836c;--rule:#dbc9ab;--accent:#b4652b;--link:#9a5321;--tan:#c49a6c;--sh:rgba(80,50,20,.28);color-scheme:light}
+[data-theme=solarized-dark]{--bg:#002b36;--surface:#073642;--ink:#93a1a1;--heading:#eee8d5;--muted:#839496;--faint:#61777d;--rule:#0f4a57;--accent:#268bd2;--link:#2aa1f0;--tan:#b58900;--sh:rgba(0,0,0,.55);color-scheme:dark}
+[data-theme=forest]{--bg:#151c18;--surface:#1e2722;--ink:#d6dfd5;--heading:#eef4ea;--muted:#a3b3a5;--faint:#6f8073;--rule:#2f3b33;--accent:#7cc48b;--link:#8fd39d;--tan:#6b7f3a;--sh:rgba(0,0,0,.6);color-scheme:dark}
+[data-theme=midnight]{--bg:#10131c;--surface:#181d2a;--ink:#d7dcea;--heading:#f1f3fa;--muted:#a3abc2;--faint:#6b7390;--rule:#2a3145;--accent:#8b9cff;--link:#a3b1ff;--tan:#5a4a8a;--sh:rgba(0,0,0,.65);color-scheme:dark}
+:root{--serif:"New York","Iowan Old Style",Newsreader,Georgia,serif;--sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Inter,Arial,sans-serif;--mono:"SF Mono",ui-monospace,"JetBrains Mono",Menlo,monospace;
   --ease-out:cubic-bezier(.23,1,.32,1);--ease-io:cubic-bezier(.77,0,.175,1)}
-@media (prefers-color-scheme:dark){:root{--bg:#171614;--surface:#24211e;--ink:#e3ddd5;--heading:#f4eee5;--muted:#aca297;--faint:#7f776f;--rule:#3d3832;--accent:#6ea8ff;--link:#8ab8ff;--tan:#625344;--band:#201e1b}}
 *{box-sizing:border-box}
-html{background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;scroll-behavior:smooth;transition:background-color .6s var(--ease-io),color .6s var(--ease-io)}
-body{margin:0;font:17px/1.65 ui-serif,"New York",Georgia,serif}
-h1,h2,h3{color:var(--heading);line-height:1.15}
+html{background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;scroll-behavior:smooth;scroll-padding-top:72px}
+body{margin:0;font:16px/1.6 var(--sans);overflow-x:hidden}
+.theming,.theming *{transition:background-color .5s var(--ease-io),color .5s var(--ease-io),border-color .5s var(--ease-io)!important}
+::selection{background:color-mix(in srgb,var(--accent) 35%,transparent)}
 a{color:var(--link)}
-.wrap{max-width:1100px;margin:0 auto;padding:0 16px}
-header{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--band) 80%,transparent);backdrop-filter:saturate(1.6) blur(18px);-webkit-backdrop-filter:saturate(1.6) blur(18px);border-bottom:1px solid var(--rule);transition:box-shadow .3s var(--ease-out)}
-header.scrolled{box-shadow:0 10px 30px -18px rgba(40,30,15,.35)}
-header .wrap{display:flex;align-items:center;justify-content:space-between;height:58px;gap:12px}
-.logo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:19px;color:var(--heading);text-decoration:none}
-.pill{display:flex;gap:2px;padding:4px;border-radius:14px;background:color-mix(in srgb,var(--surface) 70%,transparent);border:1px solid var(--rule)}
-.pill a{font:13px -apple-system,sans-serif;color:var(--muted);padding:6px 12px;border-radius:10px;text-decoration:none;white-space:nowrap}
-.pill a:hover{color:var(--ink);background:var(--band)}
-@media (max-width:820px){.pill a:not(.keep){display:none}}
-.hero{text-align:center;padding:64px 0 16px}
-.hero>*{opacity:0;transform:translateY(14px);animation:rise .8s var(--ease-out) forwards}
-.hero>:nth-child(2){animation-delay:.08s}.hero>:nth-child(3){animation-delay:.16s}.hero>:nth-child(4){animation-delay:.24s}.hero>:nth-child(5){animation-delay:.32s}.hero>.stage{animation-delay:.42s;animation-duration:1s}
-@keyframes rise{to{opacity:1;transform:none}}
-.app-icon{width:128px;height:128px;margin-bottom:10px;filter:drop-shadow(0 18px 24px rgba(80,60,30,.25));animation:rise .8s var(--ease-out) forwards,float 6s ease-in-out 1s infinite!important}
-@keyframes float{0%,100%{translate:0 0}50%{translate:0 -8px}}
-.hero h1{font-size:clamp(38px,6vw,64px);margin:0 0 16px;letter-spacing:-.01em}
-.ink{background:linear-gradient(90deg,var(--heading) 45%,transparent 55%) 100% 0/220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:inkin 1.6s var(--ease-out) .25s forwards}
-@keyframes inkin{to{background-position:0 0}}
-.hero p.lead{font-size:20px;color:var(--muted);max-width:660px;margin:0 auto 26px}
-.cta{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;align-items:center}
-.btn{font:600 15px -apple-system,sans-serif;padding:11px 20px;border-radius:12px;border:1px solid var(--rule);color:var(--ink);background:var(--surface);text-decoration:none;transition:transform .15s var(--ease-out),box-shadow .2s}
-.btn.primary{background:var(--heading);color:var(--bg);border-color:transparent}
+code,kbd{font:.86em var(--mono)}
+h1,h2,h3{font-family:var(--serif);font-weight:400;color:var(--heading);letter-spacing:-.015em;line-height:1.08;margin:0}
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+@media (max-width:600px){.wrap{padding:0 16px}}
+
+/* Ambient canvas: warm and cool glows plus faint Markdown tokens */
+.ambient{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;
+  background:radial-gradient(55% 60% at 12% 35%,color-mix(in srgb,var(--tan) 16%,transparent),transparent 70%),radial-gradient(50% 60% at 88% 30%,color-mix(in srgb,var(--accent) 11%,transparent),transparent 70%)}
+.ambient span{position:absolute;font:11px var(--mono);white-space:nowrap;color:color-mix(in srgb,var(--ink) 5.5%,transparent)}
+.ambient span.lit{animation:lit 7s ease-in-out infinite;animation-delay:var(--d)}
+@keyframes lit{0%,100%{color:color-mix(in srgb,var(--ink) 5.5%,transparent)}50%{color:color-mix(in srgb,var(--accent) 45%,transparent)}}
+
+/* Header */
+header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 72%,transparent);backdrop-filter:saturate(1.5) blur(16px);-webkit-backdrop-filter:saturate(1.5) blur(16px);border-bottom:1px solid transparent;transition:border-color .3s}
+header.scrolled{border-bottom-color:var(--rule)}
+.hbar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;height:64px;max-width:1440px;margin:0 auto;padding:0 24px;gap:16px}
+.brand{display:flex;align-items:center;gap:10px;color:var(--heading);text-decoration:none;font:600 17px var(--sans)}
+.brand img{border-radius:8px}
+.brand small{font:10px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--faint);padding-left:12px;margin-left:2px;border-left:1px solid var(--rule)}
+.nav{display:flex;gap:4px}
+.nav a{font:14px var(--sans);color:var(--muted);text-decoration:none;padding:6px 12px;border-radius:8px;transition:color .15s}
+.nav a:hover{color:var(--heading)}
+.hright{display:flex;justify-content:flex-end;align-items:center;gap:10px}
+.chip{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 12px;border:1px solid var(--rule);border-radius:9px;background:color-mix(in srgb,var(--surface) 60%,transparent);color:var(--muted);font:13px var(--sans);cursor:pointer;transition:color .15s,border-color .15s,transform .12s var(--ease-out)}
+.chip:hover{color:var(--heading);border-color:color-mix(in srgb,var(--ink) 30%,var(--rule))}
+.chip:active{transform:scale(.97)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;height:44px;padding:0 20px;border-radius:11px;font:600 15px var(--sans);text-decoration:none;white-space:nowrap;cursor:pointer;border:1px solid var(--rule);color:var(--heading);background:color-mix(in srgb,var(--surface) 70%,transparent);transition:transform .12s var(--ease-out),box-shadow .2s var(--ease-out),filter .2s}
+.btn.primary{background:color-mix(in oklab,var(--accent) 68%,#000);border-color:transparent;color:#fff;box-shadow:0 8px 24px -10px var(--accent),inset 0 1px 0 rgba(255,255,255,.25)}
+.btn.sm{height:36px;padding:0 14px;font-size:13px;border-radius:9px}
 .btn:active{transform:scale(.97)}
-@media (hover:hover) and (pointer:fine){.btn:hover{transform:translateY(-1px);box-shadow:0 10px 20px -12px rgba(40,30,15,.4)}}
-.cmd{display:flex;align-items:center;gap:10px;background:var(--heading);color:var(--bg);border-radius:13px;padding:10px 10px 10px 18px;max-width:640px;margin:0 auto 14px;text-align:left;box-shadow:0 24px 50px -30px rgba(40,30,15,.5)}
-.cmd code{flex:1;font:14px/1.5 "SF Mono",ui-monospace,Menlo,monospace;overflow-x:auto;white-space:nowrap}
-.copy{position:relative;flex:none;border:0;border-radius:9px;padding:8px 14px;font:600 13px -apple-system,sans-serif;cursor:pointer;background:color-mix(in srgb,var(--bg) 18%,transparent);color:var(--bg);transition:transform .12s var(--ease-out),background .2s}
+@media (hover:hover) and (pointer:fine){.btn.primary:hover{filter:brightness(1.08);box-shadow:0 12px 30px -10px var(--accent),inset 0 1px 0 rgba(255,255,255,.25)}}
+.btn svg{width:15px;height:15px;fill:currentColor}
+@media (max-width:900px){.hbar{grid-template-columns:1fr auto}.nav,.brand small{display:none}}
+@media (max-width:480px){.hright .chip span.t{display:none}}
+
+/* Popovers (theme menu, install options) grow from their trigger */
+[popover]{position:fixed;inset:auto;margin:0;padding:8px;border:1px solid var(--rule);border-radius:12px;background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);color:var(--ink);box-shadow:0 24px 60px -20px var(--sh);max-width:calc(100vw - 32px);
+  opacity:0;transform:translateY(-4px) scale(.97);transition:opacity .18s var(--ease-out),transform .18s var(--ease-out),display .18s allow-discrete,overlay .18s allow-discrete}
+[popover]:popover-open{opacity:1;transform:none}
+@starting-style{[popover]:popover-open{opacity:0;transform:translateY(-4px) scale(.97)}}
+.pop-title{font:10px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin:6px 8px 8px}
+#theme-menu{width:230px;transform-origin:top right}
+.opt{display:flex;align-items:center;gap:10px;width:100%;padding:8px;border:0;border-radius:8px;background:none;color:var(--ink);font:14px var(--sans);text-align:left;cursor:pointer}
+.opt:hover,.opt:focus-visible{background:color-mix(in srgb,var(--ink) 8%,transparent);outline:none}
+.opt b{width:16px;height:16px;border-radius:50%;flex:none;border:1px solid rgba(128,128,128,.4);background:linear-gradient(135deg,var(--a) 50%,var(--b) 50%)}
+.opt small{margin-left:auto;font:10px var(--mono);color:var(--faint)}
+.opt[aria-checked=true]{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--heading)}
+#install-pop{width:460px;padding:14px;transform-origin:top left}
+.cmd{display:flex;align-items:center;gap:10px;border:1px solid var(--rule);background:color-mix(in srgb,var(--bg) 70%,transparent);border-radius:10px;padding:8px 8px 8px 14px}
+.cmd code{flex:1;overflow-x:auto;white-space:nowrap;color:var(--heading);font-size:13px;scrollbar-width:none}
+.cmd code::before{content:"$ ";color:var(--faint)}
+.copy{position:relative;flex:none;border:1px solid var(--rule);border-radius:7px;padding:5px 11px;font:600 12px var(--sans);cursor:pointer;background:var(--surface);color:var(--ink);transition:transform .12s var(--ease-out),background .2s,color .2s}
 .copy:active{transform:scale(.96)}
-.copy .c2{position:absolute;inset:0;display:grid;place-items:center;opacity:0;transform:translateY(4px);transition:opacity .2s var(--ease-out),transform .2s var(--ease-out)}
-.copy.done .c1{opacity:0}.copy.done .c2{opacity:1;transform:none}.copy.done{background:#2f7a46}
-.stage{perspective:1600px;margin-top:44px}
-.shot{display:block;width:100%;height:auto;border-radius:14px;border:1px solid var(--rule);box-shadow:0 34px 80px -36px rgba(40,30,15,.45)}
-.stage .shot{max-width:1040px;margin:0 auto;transform:rotateX(var(--tilt,14deg)) scale(var(--sc,.96));transform-origin:50% 0;will-change:transform}
-.film{position:relative;max-width:1040px;margin:0 auto;aspect-ratio:16/9;border-radius:16px;overflow:hidden;border:1px solid var(--rule);background:#2e3440;box-shadow:0 34px 80px -36px rgba(40,30,15,.45)}
+.copy .c2{position:absolute;inset:0;display:grid;place-items:center;opacity:0}
+.copy.done{background:#2f7a46;color:#fff;border-color:transparent}.copy.done .c1{opacity:0}.copy.done .c2{opacity:1}
+.pop-row{margin:12px 0 4px;font-size:13px;color:var(--muted)}
+
+/* Section rail */
+.rail{position:fixed;left:22px;top:50%;transform:translateY(-50%);z-index:15;display:flex;flex-direction:column;gap:9px}
+.rail a{display:flex;align-items:center;gap:10px;height:7px;text-decoration:none}
+.rail a i{width:12px;height:1px;background:var(--faint);opacity:.6;transition:width .25s var(--ease-out),background .25s,opacity .25s}
+.rail a span{font:10px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);opacity:0;transform:translateX(-4px);transition:opacity .2s var(--ease-out),transform .2s var(--ease-out);white-space:nowrap}
+.rail a.on i{width:22px;background:var(--heading);opacity:1}
+.rail:hover a span{opacity:1;transform:none}
+@media (max-width:1180px){.rail{display:none}}
+
+/* Hero */
+.hero{display:grid;grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr);gap:56px;align-items:center;max-width:1440px;margin:0 auto;padding:56px 24px 40px 72px;min-height:calc(100svh - 64px)}
+.hero h1{font-size:clamp(46px,5.6vw,84px);line-height:1.02;margin-bottom:24px}
+.hero .lead{font-size:18px;color:var(--muted);max-width:30em;margin:0 0 30px}
+.cta{display:flex;gap:10px;flex-wrap:wrap}
+.cta .btn.mono{font:600 12px var(--mono);color:var(--muted)}
+.cta .btn.mono em{font-style:normal;display:grid;place-items:center;width:20px;height:20px;border-radius:5px;background:color-mix(in srgb,var(--ink) 10%,transparent);color:var(--heading)}
+.micro{font:11px var(--mono);letter-spacing:.04em;color:var(--faint);margin-top:18px}
+.hero>*{animation:rise .9s var(--ease-out) both}
+.hero>:nth-child(2){animation-delay:.12s}
+@keyframes rise{from{opacity:0;transform:translateY(16px)}}
+.note{font:500 24px "Caveat","Snell Roundhand",cursive;color:var(--muted);text-align:center;margin-top:14px;display:flex;justify-content:center;align-items:center;gap:8px}
+.note svg{width:44px;height:22px;stroke:currentColor;fill:none;stroke-width:1.4;stroke-linecap:round}
+@media (max-width:980px){.hero{grid-template-columns:1fr;padding:40px 16px;min-height:0;gap:40px}}
+
+/* Window chrome (shared by the live editor and screenshots) */
+.win{position:relative;border:1px solid var(--rule);border-radius:13px;background:var(--surface);overflow:hidden;box-shadow:0 50px 100px -40px var(--sh),0 0 0 .5px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.04)}
+.wbar{position:relative;display:flex;align-items:center;gap:8px;height:42px;padding:0 12px;border-bottom:1px solid var(--rule);background:color-mix(in srgb,var(--bg) 35%,var(--surface))}
+.lights{display:flex;gap:7px}.lights i{width:12px;height:12px;border-radius:50%;background:#ff5f57}.lights i:nth-child(2){background:#febc2e}.lights i:nth-child(3){background:#28c840}
+.wtitle{position:absolute;left:50%;transform:translateX(-50%);font:600 13px var(--sans);color:var(--heading);white-space:nowrap}
+.wtitle small{font-weight:400;color:var(--faint)}
+.seg{margin-left:auto;display:flex;gap:2px;padding:2px;border-radius:8px;background:color-mix(in srgb,var(--ink) 7%,transparent)}
+.seg button{border:0;background:none;color:var(--muted);font:12px var(--sans);padding:4px 11px;border-radius:6px;cursor:pointer;transition:color .15s}
+.seg button[aria-selected=true]{background:var(--surface);color:var(--heading);box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.shot{display:block;width:100%;height:auto}
+
+/* Live editor */
+.live{--h:540px}
+.panes{display:grid;grid-template-columns:1fr 1fr;height:var(--h)}
+.live[data-mode=document] .panes{grid-template-columns:0 1fr}
+.live[data-mode=source] .panes{grid-template-columns:1fr 0}
+.src{min-width:0;border:0;border-right:1px solid var(--rule);resize:none;outline:none;padding:22px 22px 70px;background:color-mix(in srgb,var(--bg) 40%,var(--surface));color:var(--ink);font:13px/1.75 var(--mono);tab-size:2;caret-color:var(--accent)}
+.live[data-mode=document] .src{padding:0;border:0}
+.doc{min-width:0;overflow:auto;padding:26px 34px 80px;font:16px/1.6 var(--serif);color:var(--ink);scrollbar-width:thin}
+.live[data-mode=document] .doc{padding:34px max(34px,calc(50% - 300px)) 80px}
+.live[data-mode=source] .doc{padding:0}
+.doc>:first-child{margin-top:0}
+.doc h1,.doc h2,.doc h3{font-weight:700;letter-spacing:-.01em;line-height:1.2;margin:1.1em 0 .45em}
+.doc h1{font-size:30px}.doc h2{font-size:22px}.doc h3{font-size:18px}
+.doc p,.doc ul,.doc ol,.doc table,.doc pre,.doc blockquote,.doc .alert{margin:0 0 .9em}
+.doc ul,.doc ol{padding-left:1.4em}
+.doc li.task{list-style:none;margin-left:-1.4em}
+.doc .box{display:inline-block;width:1em;height:1em;margin-right:.5em;vertical-align:-.13em;border:1.5px solid var(--faint);border-radius:.25em}
+.doc li.done{color:var(--faint);text-decoration:line-through}
+.doc li.done .box{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 20%,transparent)}
+.doc code{background:color-mix(in srgb,var(--ink) 9%,transparent);padding:.1em .35em;border-radius:5px;font-size:.82em}
+.doc pre{background:color-mix(in srgb,var(--ink) 6%,transparent);padding:12px 14px;border-radius:9px;overflow:auto;font:12.5px/1.55 var(--mono)}
+.doc pre code{background:none;padding:0}
+.doc mark{background:color-mix(in srgb,#ffd400 38%,transparent);color:inherit;border-radius:3px;padding:0 .12em}
+.doc a{color:var(--link);text-underline-offset:2px}
+.doc a.wiki{text-decoration:underline dotted;cursor:default}
+.doc blockquote{border-left:3px solid var(--tan);padding-left:14px;margin-left:0;color:var(--muted)}
+.doc .alert{border-left:3px solid #3f9a5c;background:color-mix(in srgb,#3f9a5c 12%,transparent);padding:10px 14px;border-radius:0 8px 8px 0}
+.doc .alert b{display:block;font:600 13px var(--sans);color:#3f9a5c}
+.doc .alert.note{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent)}.doc .alert.note b{color:var(--accent)}
+.doc .alert.warning{border-color:#c48a1c;background:color-mix(in srgb,#c48a1c 12%,transparent)}.doc .alert.warning b{color:#c48a1c}
+.doc .alert p{margin:0}
+.doc table{border-collapse:collapse;font-size:14px}
+.doc th,.doc td{border:1px solid var(--rule);padding:5px 11px;text-align:left}
+.doc th{background:color-mix(in srgb,var(--ink) 5%,transparent)}
+.doc .math{font-style:italic;font-family:var(--serif);color:var(--heading)}
+.doc hr{border:0;border-top:1px solid var(--rule);margin:1.4em 0}
+.fbar{position:absolute;left:50%;bottom:38px;transform:translateX(-50%);display:flex;align-items:center;gap:2px;padding:5px 8px;border-radius:12px;border:1px solid var(--rule);background:color-mix(in srgb,var(--surface) 82%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 14px 34px -14px var(--sh)}
+.fbar button{display:grid;place-items:center;min-width:28px;height:26px;border:0;border-radius:6px;background:none;color:var(--ink);font:600 13px var(--sans);cursor:pointer;transition:background .12s,transform .1s var(--ease-out)}
+.fbar button:hover{background:color-mix(in srgb,var(--ink) 9%,transparent)}
+.fbar button:active{transform:scale(.92)}
+.fbar i{width:1px;height:16px;background:var(--rule);margin:0 4px}
+.status{display:flex;gap:14px;align-items:center;height:28px;padding:0 14px;border-top:1px solid var(--rule);font:10.5px var(--mono);color:var(--faint);background:color-mix(in srgb,var(--bg) 35%,var(--surface));white-space:nowrap;overflow:hidden}
+.status .live-dot{color:var(--accent)}
+.status span:last-child{margin-left:auto}
+@media (max-width:980px){.live{--h:460px}}
+@media (max-width:640px){.live .panes{grid-template-columns:1fr!important;grid-template-rows:1fr}.live[data-mode=split] .panes{grid-template-rows:38% 62%}.live[data-mode=document] .src,.live[data-mode=source] .doc{display:none}.src{border-right:0;border-bottom:1px solid var(--rule)}.fbar{display:none}.wtitle{display:none}}
+
+/* Sections */
+section{position:relative;padding:130px 0}
+.eyebrow{font:11px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin:0 0 18px}
+h2{font-size:clamp(34px,4.4vw,60px);margin-bottom:20px}
+.sub{font-size:18px;color:var(--muted);max-width:36em;margin:0 0 44px}
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .8s var(--ease-out),transform .8s var(--ease-out);transition-delay:var(--d,0s)}
+.reveal.in{opacity:1;transform:none}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:64px;align-items:center}
+@media (max-width:900px){.two{grid-template-columns:1fr;gap:36px}section{padding:90px 0}}
+
+/* The difference */
+.diff-win{max-width:980px}
+.diff-body{position:relative;display:grid;height:560px;overflow:hidden;background:var(--surface)}
+.diff-body>*{grid-area:1/1;transition:opacity .45s var(--ease-io),filter .45s var(--ease-io)}
+.diff-body pre{margin:0;padding:34px 40px;font:13.5px/1.75 var(--mono);color:var(--ink);white-space:pre-wrap;overflow:hidden}
+.diff-body img{width:100%;height:100%;object-fit:cover;object-position:top}
+.diff-win[data-v=raw] img,.diff-win[data-v=parchly] pre{opacity:0;filter:blur(6px);pointer-events:none}
+.diff-cap{display:flex;justify-content:space-between;gap:16px;margin-top:16px;font:11px var(--mono);letter-spacing:.06em;color:var(--faint)}
+.diff-cap b{color:var(--muted);font-weight:500}
+.diff-grid{display:grid;grid-template-columns:minmax(0,1fr) 240px;gap:48px;align-items:center}
+.marks{list-style:none;padding:0;margin:0}
+.marks li{display:grid;grid-template-columns:22px 1fr;gap:4px 10px;padding:14px 0;border-bottom:1px solid var(--rule);font-size:13px;color:var(--faint)}
+.marks li i{grid-row:span 2;width:16px;height:1px;margin-top:10px;background:var(--accent)}
+.marks li b{font-weight:600;color:var(--heading)}
+@media (max-width:900px){.diff-grid{grid-template-columns:1fr}.diff-body{height:440px}.diff-body pre{padding:22px;font-size:12px}}
+
+/* Big statement */
+.statement{font:400 clamp(32px,4vw,56px)/1.12 var(--serif);color:var(--heading);letter-spacing:-.015em;max-width:17em;margin:0}
+
+/* Film */
+.film{position:relative;aspect-ratio:16/9;background:#2e3440}
 .film video{display:block;width:100%;height:100%}
-.play{position:absolute;inset:0;display:grid;place-items:center;border:0;padding:0;cursor:pointer;background:linear-gradient(180deg,transparent 50%,rgba(0,0,0,.3));transition:opacity .2s var(--ease-out)}
-.play span{display:flex;align-items:center;gap:12px;padding:12px 22px 12px 12px;border-radius:999px;background:color-mix(in srgb,var(--surface) 80%,transparent);-webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4);color:var(--heading);font:600 16px -apple-system,sans-serif;box-shadow:0 18px 40px -16px rgba(0,0,0,.5),inset 0 0 0 1px rgba(255,255,255,.3);transition:transform .15s var(--ease-out)}
-.play i{width:38px;height:38px;border-radius:50%;background:var(--accent);display:grid;place-items:center}
-.play i::after{content:"";margin-left:3px;border-left:12px solid #fff;border-top:7.5px solid transparent;border-bottom:7.5px solid transparent}
-.play small{font:500 14px -apple-system,sans-serif;color:var(--muted)}
+.play{position:absolute;inset:0;display:grid;place-items:center;border:0;padding:0;cursor:pointer;background:linear-gradient(180deg,transparent 45%,rgba(0,0,0,.35));transition:opacity .2s var(--ease-out)}
+.play span{display:flex;align-items:center;gap:12px;padding:10px 22px 10px 10px;border-radius:999px;background:rgba(20,18,16,.55);backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);color:#fff;font:600 15px var(--sans);box-shadow:0 18px 40px -16px rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,255,255,.18);transition:transform .15s var(--ease-out)}
+.play i{width:36px;height:36px;border-radius:50%;background:var(--accent);display:grid;place-items:center}
+.play i::after{content:"";margin-left:3px;border-left:11px solid #fff;border-top:7px solid transparent;border-bottom:7px solid transparent}
+.play small{font:12px var(--mono);opacity:.7}
 .play:active span{transform:scale(.97)}
-.play:focus-visible{outline:none}.play:focus-visible span{outline:2px solid var(--accent);outline-offset:3px}
 @media (hover:hover) and (pointer:fine){.play:hover span{transform:scale(1.03)}}
 .film.on .play{opacity:0;pointer-events:none}
-section{padding:84px 0;border-top:1px solid var(--rule)}
-h2{font-size:clamp(28px,4vw,38px);margin:0 0 12px}
-.sub{color:var(--muted);font-size:19px;max-width:680px;margin:0 0 34px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
-.card{background:var(--surface);border:1px solid var(--rule);border-radius:14px;padding:20px 22px}
-.card h3{margin:0 0 6px;font-size:19px}.card p{margin:0;color:var(--muted);font-size:16px}
-.split{display:grid;grid-template-columns:1fr 1.15fr;gap:36px;align-items:center}
-@media (max-width:820px){.split{grid-template-columns:1fr}}
-kbd{font:13px "SF Mono",ui-monospace,Menlo,monospace;background:var(--surface);border:1px solid var(--rule);border-bottom-width:2px;border-radius:6px;padding:1px 7px;white-space:nowrap}
-.reveal{opacity:0;transform:translateY(18px);transition:opacity .7s var(--ease-out),transform .7s var(--ease-out);transition-delay:var(--d,0s)}
-.reveal.in{opacity:1;transform:none}
-@media (hover:hover) and (pointer:fine){.card{transition:transform .2s var(--ease-out),border-color .2s,box-shadow .2s var(--ease-out),opacity .7s var(--ease-out)}.card:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--accent) 35%,var(--rule));box-shadow:0 14px 30px -18px rgba(40,30,15,.35)}}
-.fbar{display:inline-flex;gap:4px;padding:7px 12px;border-radius:22px;background:color-mix(in srgb,var(--surface) 75%,transparent);backdrop-filter:blur(14px);border:1px solid var(--rule);box-shadow:0 18px 40px -22px rgba(40,30,15,.45);flex-wrap:wrap;justify-content:center}
-.fbar span{display:grid;place-items:center;min-width:34px;height:32px;border-radius:9px;font:600 15px -apple-system,sans-serif;color:var(--ink);transition:background .15s,transform .15s var(--ease-out)}
-.fbar span.on{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent);transform:scale(.92)}
-.fbar i{width:1px;background:var(--rule);margin:6px 4px}
-.swatches{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:22px}
-.sw{display:flex;align-items:center;gap:8px;border:1px solid var(--rule);background:var(--surface);color:var(--ink);border-radius:12px;padding:7px 12px 7px 8px;font:500 13px -apple-system,sans-serif;cursor:pointer;transition:border-color .2s,transform .15s var(--ease-out)}
-.sw:active{transform:scale(.96)}
-.sw b{width:22px;height:22px;border-radius:7px;border:1px solid rgba(0,0,0,.12);background:linear-gradient(135deg,var(--a) 50%,var(--b) 50%)}
-.sw[aria-pressed=true]{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 30%,transparent)}
-.theme-frame{border-radius:14px;overflow:hidden;border:1px solid var(--rule);box-shadow:0 34px 80px -36px rgba(40,30,15,.45)}
-.theme-frame img{display:block;width:100%;height:auto}
-.swap{opacity:0!important;filter:blur(6px)}
-#theme-shot,#mode-shot{transition:opacity .3s ease,filter .3s ease}
-table{border-collapse:collapse;width:100%;font-size:16px}
-th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--rule);vertical-align:top}
-th{font-weight:600;color:var(--heading)}
-td.y{color:#2f7a46;font-weight:700}
-.table-wrap{overflow-x:auto}
-.tabs{position:relative;display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
-.tabs button{font:13px -apple-system,sans-serif;border:1px solid var(--rule);background:var(--surface);color:var(--muted);padding:6px 14px;border-radius:10px;cursor:pointer;transition:color .2s}
-.tabs button[aria-selected=true]{color:var(--ink);font-weight:600}
-.tabs .ind{position:absolute;bottom:0;height:2px;background:var(--accent);border-radius:1px;transition:transform .3s var(--ease-out),width .3s var(--ease-out)}
-.steps{counter-reset:s;display:grid;gap:18px}
-.step{counter-increment:s;display:grid;grid-template-columns:44px 1fr;gap:14px;align-items:start}
-.step::before{content:counter(s);display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:var(--heading);color:var(--bg);font:700 15px -apple-system,sans-serif}
-.step h3{margin:4px 0 4px;font-size:19px}.step p{margin:0;color:var(--muted)}
-details{border:1px solid var(--rule);border-radius:12px;background:var(--surface);padding:14px 18px;margin-bottom:10px}
-summary{cursor:pointer;font-weight:600;color:var(--heading);list-style:none}
-summary::after{content:"+";float:right;color:var(--faint);transition:transform .2s var(--ease-out)}
-details[open] summary::after{transform:rotate(45deg)}
-details p{margin:10px 0 0;color:var(--muted)}
-.demo{background:var(--surface);border:1px solid var(--rule);border-radius:14px;padding:30px 36px;min-height:320px;box-shadow:0 30px 70px -36px rgba(40,30,15,.3);font-size:18px}
-.demo .bar{display:flex;gap:7px;margin:-12px 0 20px -16px}.demo .bar i{width:11px;height:11px;border-radius:50%;background:var(--rule)}
+
+/* Typing demo */
+.demo{padding:30px 36px;min-height:330px;font:18px/1.65 var(--serif);color:var(--ink)}
 .demo .ln{min-height:1.7em;white-space:pre-wrap}
 .demo .h1{font-size:30px;font-weight:700;line-height:1.3;margin-bottom:6px;color:var(--heading)}
 .demo .q{border-left:3px solid transparent;transition:border-color .4s var(--ease-out),padding .4s var(--ease-out);color:var(--muted)}
 .demo .q.done{border-color:var(--tan);padding-left:14px}
-.demo .mk{color:var(--muted);opacity:.6;display:inline-block;white-space:pre;max-width:6em;overflow:hidden;vertical-align:bottom;transition:max-width .45s var(--ease-out),opacity .3s ease}
+.demo .mk{color:var(--faint);display:inline-block;white-space:pre;max-width:6em;overflow:hidden;vertical-align:bottom;font-family:var(--mono);font-size:.8em;transition:max-width .45s var(--ease-out),opacity .3s ease}
 .demo .done .mk{max-width:0;opacity:0}
 .demo .box{display:inline-block;width:0;height:1em;vertical-align:-.15em;border-radius:5px;border:0 solid var(--faint);transition:width .35s var(--ease-out),margin .35s var(--ease-out)}
 .demo .done .box{width:1em;margin-right:.55em;border-width:1.5px}
-.demo .done .box.x{background:color-mix(in srgb,var(--accent) 16%,transparent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5' fill='none' stroke='%23307afe' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");border-color:var(--accent)}
-.demo .done .x~.t{text-decoration:line-through;color:var(--muted)}
-.demo mark{background:color-mix(in srgb,#ffd400 40%,transparent);color:inherit;border-radius:3px}
+.demo .done .box.x{background:color-mix(in srgb,var(--accent) 20%,transparent);border-color:var(--accent)}
+.demo .done .x~.t{text-decoration:line-through;color:var(--faint)}
+.demo mark{background:color-mix(in srgb,#ffd400 38%,transparent);color:inherit;border-radius:3px}
+.demo a{color:var(--link)}
 .demo .caret{display:inline-block;width:2px;height:1.1em;background:var(--accent);vertical-align:-.18em;margin-left:1px;animation:blink 1s steps(1) infinite}
 @keyframes blink{50%{opacity:0}}
-footer{padding:40px 0 60px;color:var(--muted);font-size:15px;border-top:1px solid var(--rule)}
-@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}.hero>*,.reveal{opacity:1;transform:none}.stage .shot{transform:none}.ink{background-position:0 0}}
+.keys{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+kbd{display:inline-block;border:1px solid var(--rule);border-bottom-width:2px;border-radius:6px;padding:1px 7px;background:color-mix(in srgb,var(--surface) 70%,transparent);color:var(--heading);white-space:nowrap}
+.keys span{font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center;padding:6px 10px 6px 6px;border:1px solid var(--rule);border-radius:9px}
+
+/* Claims and features */
+.claims{list-style:none;margin:0;padding:0}
+.claims li{font:400 clamp(22px,2.2vw,30px)/1.3 var(--serif);color:var(--muted);padding:14px 0;border-bottom:1px solid var(--rule);transition:color .2s}
+.claims li:hover{color:var(--heading)}
+.feats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--rule);margin-top:90px}
+.feat{padding:26px 26px 30px 0;border-bottom:1px solid var(--rule)}
+.feat+.feat{padding-left:26px;border-left:1px solid var(--rule)}
+.feat:nth-child(4n+1){padding-left:0;border-left:0}
+.feat h3{font-size:22px;margin-bottom:10px}
+.feat p{margin:0;font-size:14.5px;color:var(--muted)}
+.feat code{color:var(--heading)}
+@media (max-width:900px){.feats{grid-template-columns:1fr 1fr}.feat:nth-child(odd){padding-left:0;border-left:0}.feat:nth-child(even){padding-left:22px;border-left:1px solid var(--rule)}}
+@media (max-width:560px){.feats{grid-template-columns:1fr}.feat,.feat:nth-child(even){padding-left:0;border-left:0}}
+
+/* Themes */
+.themes{display:grid;grid-template-columns:230px minmax(0,1fr);gap:28px;align-items:start}
+.tlist{display:flex;flex-direction:column;gap:2px}
+.tlist .opt{padding:10px}
+@media (max-width:820px){.themes{grid-template-columns:1fr}.tlist{flex-direction:row;flex-wrap:wrap}.tlist .opt{width:auto;border:1px solid var(--rule)}.tlist .opt small{display:none}}
+#theme-shot,#mode-shot{transition:opacity .25s ease,filter .25s ease}
+.swap{opacity:0!important;filter:blur(6px)}
+
+/* Tables */
+.tbl{overflow-x:auto}
+table.data{border-collapse:collapse;width:100%;font:13px var(--mono)}
+table.data caption{text-align:left;font:11px var(--mono);letter-spacing:.06em;color:var(--faint);padding-bottom:14px}
+table.data th,table.data td{text-align:left;padding:14px;border-bottom:1px solid var(--rule);vertical-align:top}
+table.data th{font-weight:500;color:var(--faint);border-top:1px solid var(--rule)}
+table.data td:first-child{color:var(--heading);font-family:var(--sans);font-size:14.5px}
+table.data td{color:var(--muted)}
+table.data td.y{color:var(--accent)}
+table.data td.y::before{content:"";display:inline-block;width:28px;height:2px;border-radius:1px;background:var(--accent);vertical-align:middle;margin-right:8px;box-shadow:0 0 8px var(--accent)}
+table.data tr{transition:background .15s}
+table.data tbody tr:hover{background:color-mix(in srgb,var(--ink) 4%,transparent)}
+
+/* Install, FAQ */
+.steps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0;border-top:1px solid var(--rule)}
+.step{min-width:0;padding:30px 30px 34px 0;border-bottom:1px solid var(--rule)}
+.step:nth-child(even){padding-left:30px;border-left:1px solid var(--rule)}
+.step .n{font:11px var(--mono);color:var(--accent);letter-spacing:.1em}
+.step h3{font-size:26px;margin:10px 0 10px}
+.step p{margin:0;color:var(--muted);font-size:15px}
+.step b{color:var(--ink);font-weight:600}
+.step .cmd{margin-top:16px}
+@media (max-width:600px){table.data td.y::before{display:none}}
+@media (max-width:820px){.steps{grid-template-columns:1fr}.step:nth-child(even){padding-left:0;border-left:0}}
+.faq{max-width:820px}
+details{border-bottom:1px solid var(--rule)}
+details:first-of-type{border-top:1px solid var(--rule)}
+summary{cursor:pointer;list-style:none;padding:22px 40px 22px 0;position:relative;font:400 22px/1.3 var(--serif);color:var(--heading)}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";position:absolute;right:4px;top:20px;font:300 24px var(--sans);color:var(--faint);transition:transform .2s var(--ease-out)}
+details[open] summary::after{transform:rotate(45deg)}
+details p{margin:-6px 0 24px;color:var(--muted);max-width:40em}
+
+/* Close + footer */
+.close{text-align:center;padding:170px 0 120px}
+.close h2{font-size:clamp(48px,8vw,124px);line-height:1;margin-bottom:28px}
+.close .sub{margin:0 auto 34px}
+.close .micro{margin-top:22px}
+footer{border-top:1px solid var(--rule);padding:44px 0 60px;font-size:13px;color:var(--faint)}
+.fgrid{display:grid;grid-template-columns:1fr auto;gap:30px;align-items:start}
+.fcols{display:flex;gap:56px}
+.fcols div{display:flex;flex-direction:column;gap:8px}
+.fcols b{font:10px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--faint);font-weight:400;margin-bottom:4px}
+.fcols a{color:var(--muted);text-decoration:none}.fcols a:hover{color:var(--heading)}
+footer p{margin:26px 0 0}
+@media (max-width:700px){.fgrid{grid-template-columns:1fr}.fcols{gap:36px}}
+
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important}.reveal{opacity:1;transform:none}}
 </style>
 </head>
 <body>
-<header><div class="wrap">
-  <a class="logo" href="#"><img src="assets/icon.png" alt="" width="30" height="30">Parchly</a>
-  <nav class="pill" aria-label="Sections"><a href="#features">Features</a><a href="#themes">Themes</a><a href="#markdown">Markdown</a><a href="#install" class="keep">Install</a><a href="#faq">FAQ</a></nav>
-</div></header>
+<div class="ambient" aria-hidden="true"></div>
 
-<main>
-<div class="wrap hero">
-  <img class="app-icon" src="assets/icon-512.png" alt="Parchly app icon" width="128" height="128">
-  <h1><span class="ink">Markdown that reads like a page.</span></h1>
-  <p class="lead">Parchly is a free, native Markdown editor for Mac. Write in a calm document view or use the formatting bar, and every <code>.md</code> file stays plain text on disk.</p>
-  <div>
-    <div class="cmd"><code>curl -fsSL https://tapariapurv.github.io/parchly/install.sh | bash</code><button class="copy" type="button" aria-label="Copy install command"><span class="c1">Copy</span><span class="c2" aria-hidden="true">Copied ✓</span></button></div>
-    <div class="cta"><a class="btn primary" href="https://github.com/tapariapurv/parchly/releases/latest/download/Parchly.dmg">Download for Mac</a><a class="btn" href="#film">Watch the film</a><a class="btn" href="#install">Install guide</a><a class="btn" href="https://github.com/tapariapurv/parchly">GitHub</a></div>
+<header><div class="hbar">
+  <a class="brand" href="#top"><img src="assets/icon.png" alt="" width="30" height="30">Parchly<small>native / macOS</small></a>
+  <nav class="nav" aria-label="Sections"><a href="#features">Features</a><a href="#themes">Themes</a><a href="#install">Install</a><a href="guide.html">Guide</a><a href="https://github.com/tapariapurv/parchly">GitHub ↗</a></nav>
+  <div class="hright">
+    <button class="chip" type="button" popovertarget="theme-menu" aria-label="Choose a theme"><i class="dot"></i><span class="t">Theme</span></button>
+    <a class="btn primary sm" href="https://github.com/tapariapurv/parchly/releases/latest/download/Parchly.dmg"><svg viewBox="0 0 17 20" aria-hidden="true"><path d="M14.1 10.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.7 1.3 10.2.9 1.2 1.9 2.6 3.2 2.6 1.3-.1 1.8-.8 3.3-.8 1.6 0 2 .8 3.4.8 1.4 0 2.3-1.3 3.1-2.5 1-1.4 1.4-2.8 1.4-2.9-.1 0-2.7-1-2.7-4.1zM11.6 3c.7-.9 1.2-2 1-3.2-1 0-2.3.7-3 1.6-.7.8-1.2 2-1.1 3.1 1.2.1 2.3-.6 3.1-1.5z"/></svg>Download</a>
   </div>
-  <p style="font:13px -apple-system,sans-serif;color:var(--faint);margin-top:12px">Free &amp; open source · macOS 14+ · Apple silicon &amp; Intel · Updates itself</p>
-  <div class="stage"><img class="shot" src="assets/document.jpg" alt="Parchly editing a Markdown note in Document mode with headings, a tip callout, lists and the formatting bar" width="1600" height="1050"></div>
+</div></header>
+<div id="theme-menu" popover data-align="right" role="menu"><p class="pop-title">Choose a theme</p><div class="tlist" data-themes></div></div>
+
+<nav class="rail" aria-label="Page sections"></nav>
+
+<main id="top">
+<div class="hero" id="start" data-rail="Start">
+  <div>
+    <h1>Markdown that reads like a page.</h1>
+    <p class="lead">Parchly is a free, native Markdown editor for Mac. Write on a calm page or use the formatting bar, and every <code>.md</code> file stays plain text on disk.</p>
+    <div class="cta">
+      <a class="btn primary" href="https://github.com/tapariapurv/parchly/releases/latest/download/Parchly.dmg"><svg viewBox="0 0 17 20" aria-hidden="true"><path d="M14.1 10.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.7 1.3 10.2.9 1.2 1.9 2.6 3.2 2.6 1.3-.1 1.8-.8 3.3-.8 1.6 0 2 .8 3.4.8 1.4 0 2.3-1.3 3.1-2.5 1-1.4 1.4-2.8 1.4-2.9-.1 0-2.7-1-2.7-4.1zM11.6 3c.7-.9 1.2-2 1-3.2-1 0-2.3.7-3 1.6-.7.8-1.2 2-1.1 3.1 1.2.1 2.3-.6 3.1-1.5z"/></svg>Download for Mac</a>
+      <button class="btn mono" type="button" popovertarget="install-pop"><em>$</em>Other install options</button>
+    </div>
+    <p class="micro">Free · MIT · macOS 14+ · Apple silicon &amp; Intel · updates itself</p>
+  </div>
+  <div>
+    <div class="win live" id="live" data-mode="split">
+      <div class="wbar"><div class="lights"><i></i><i></i><i></i></div><span class="wtitle">Launch Plan.md <small id="edited"></small></span>
+        <div class="seg" role="tablist" aria-label="View"><button role="tab" data-mode="document" aria-selected="false">Document</button><button role="tab" data-mode="split" aria-selected="true">Split</button><button role="tab" data-mode="source" aria-selected="false">Source</button></div></div>
+      <div class="panes"><textarea class="src" id="src" spellcheck="false" aria-label="Markdown source, editable"></textarea><div class="doc" id="doc" aria-live="off"></div></div>
+      <div class="fbar" aria-label="Formatting bar"><button data-f="h" title="Heading">H</button><i></i><button data-f="**" title="Bold ⌘B">B</button><button data-f="_" title="Italic ⌘I"><em>I</em></button><button data-f="~~" title="Strikethrough"><s>S</s></button><button data-f="==" title="Highlight">✎</button><button data-f="`" title="Code">&lt;/&gt;</button><i></i><button data-f="- " title="Bulleted list">•</button><button data-f="- [ ] " title="Task">☑</button><button data-f="> " title="Quote">❝</button></div>
+      <div class="status"><span class="live-dot">●</span><span id="pos">Ln 1, Col 1</span><span id="words"></span><span>Markdown · UTF-8</span></div>
+    </div>
+    <p class="note"><svg viewBox="0 0 44 22" aria-hidden="true"><path d="M42 6C30 3 14 4 4 15M4 15l9-1M4 15l2-8"/></svg>This window is real. Type in it.</p>
+  </div>
+</div>
+<div id="install-pop" popover data-align="left">
+  <p class="pop-title">Install from Terminal</p>
+  <div class="cmd"><code>curl -fsSL https://tapariapurv.github.io/parchly/install.sh | bash</code><button class="copy" type="button" aria-label="Copy install command"><span class="c1">Copy</span><span class="c2" aria-hidden="true">✓</span></button></div>
+  <p class="pop-row">Installs into Applications, turns on Quick Look and opens Parchly. Or get the <a href="https://github.com/tapariapurv/parchly/releases/latest/download/Parchly.dmg">disk image</a> · <a href="#install">install guide</a>.</p>
 </div>
 
-<section id="film"><div class="wrap" style="text-align:center">
-  <h2 class="reveal">See it in 37 seconds</h2>
-  <p class="sub reveal" style="margin:0 auto 34px">Typing, the formatting bar, three views, nine themes and Quick Look in one short film. Sound on.</p>
-  <figure class="film reveal"><video src="assets/film.mp4" poster="assets/film-poster.jpg" preload="none" playsinline width="1920" height="1080" aria-label="Parchly product film, 37 seconds"></video><button class="play" type="button" aria-label="Play the 37-second Parchly film with sound"><span><i></i>Play the film <small>0:37</small></span></button></figure>
+<section id="difference" data-rail="The difference"><div class="wrap">
+  <p class="eyebrow reveal">The difference</p>
+  <h2 class="reveal" style="font-size:clamp(28px,3vw,40px)">Press Space on a Markdown file. <span style="color:var(--faint)">This is what macOS shows you.</span></h2>
+  <div class="diff-grid" style="margin-top:40px">
+    <div>
+      <div class="win diff-win reveal" id="diff" data-v="raw">
+        <div class="wbar"><div class="lights"><i></i><i style="background:var(--rule)"></i><i style="background:var(--rule)"></i></div><span class="wtitle">Launch Plan.md</span>
+          <div class="seg" role="tablist" aria-label="Quick Look"><button role="tab" data-v="raw" aria-selected="true">Without</button><button role="tab" data-v="parchly" aria-selected="false">With Parchly</button></div></div>
+        <div class="diff-body"><pre id="raw"></pre><img src="assets/quicklook.jpg" alt="Finder Quick Look showing the same Markdown file rendered by Parchly" width="1400" height="1400" loading="lazy"></div>
+      </div>
+      <p class="diff-cap reveal"><span><b>Quick Look</b> · same file, same bytes</span><span id="diff-state">Plain text</span></p>
+    </div>
+    <ul class="marks reveal">
+      <li><i></i><b>Headings</b><span>Real type, not pound signs.</span></li>
+      <li><i></i><b>Tasks</b><span>Checkboxes you can see.</span></li>
+      <li><i></i><b>Tables</b><span>Pipe rows become a grid.</span></li>
+      <li><i></i><b>Callouts</b><span>GitHub alerts, drawn natively.</span></li>
+      <li><i></i><b>Highlights</b><span><code>==text==</code> stands out.</span></li>
+      <li><i></i><b>Code</b><span>Colour from the app's own themes.</span></li>
+    </ul>
+  </div>
+  <p class="statement reveal" style="margin-top:120px">Markdown deserves to feel like a document. <span style="color:var(--faint)">Real typography, native shortcuts, and the source one keystroke away. No vault, no library, no account.</span></p>
 </div></section>
 
-<section id="demo"><div class="wrap split">
+<section id="film" data-rail="Film"><div class="wrap">
+  <p class="eyebrow reveal">The film · 0:37</p>
+  <h2 class="reveal">See it in 37 seconds.</h2>
+  <p class="sub reveal">Typing, the formatting bar, three views, nine themes and Quick Look in one short film. Sound on.</p>
+  <div class="win reveal"><figure class="film" style="margin:0"><video src="assets/film.mp4" poster="assets/film-poster.jpg" preload="none" playsinline width="1920" height="1080" aria-label="Parchly product film, 37 seconds"></video><button class="play" type="button" aria-label="Play the 37-second Parchly film with sound"><span><i></i>Play the film <small>0:37</small></span></button></figure></div>
+</div></section>
+
+<section id="writing" data-rail="Writing"><div class="wrap two">
   <div>
+    <p class="eyebrow reveal">Document mode</p>
     <h2 class="reveal">Type Markdown.<br>Read a page.</h2>
-    <p class="sub reveal">Syntax stays visible only on the line you're writing. Move on, and the markers fade away so the line reads like a finished page. The file on disk stays plain Markdown.</p>
+    <p class="sub reveal">Syntax shows only on the line you're writing. Move on and the markers fade, so the page reads like a finished document. Don't know Markdown? The formatting bar has a button for everything, and each one teaches you its shortcut.</p>
+    <div class="keys reveal"><span><kbd>⌘B</kbd>Bold</span><span><kbd>⌘I</kbd>Italic</span><span><kbd>⌘K</kbd>Link</span><span><kbd>⌘L</kbd>Tick a task</span><span><kbd>⇧⌘B</kbd>Formatting bar</span></div>
   </div>
-  <div class="demo reveal" aria-label="Animated demo of Markdown syntax turning into formatted text"><div class="bar"><i></i><i></i><i></i></div><div id="demo-body"></div></div>
+  <div class="win reveal" aria-label="Animated demo of Markdown syntax turning into formatted text"><div class="wbar"><div class="lights"><i></i><i></i><i></i></div><span class="wtitle">Launch notes.md</span></div><div class="demo" id="demo-body"></div></div>
 </div></section>
 
-<section id="format"><div class="wrap" style="text-align:center">
-  <h2 class="reveal">No syntax required</h2>
-  <p class="sub reveal" style="margin:0 auto 30px">Don't know Markdown? The floating formatting bar has a button for everything, and every button has a shortcut to learn when you're ready.</p>
-  <div class="fbar reveal" id="fbar" aria-hidden="true"><span>H</span><i></i><span>B</span><span><em>I</em></span><span><s>S</s></span><span>&lt;/&gt;</span><span>🔗</span><i></i><span>•</span><span>1.</span><span>☑</span><span>❝</span><i></i><span>{ }</span><span>⊞</span><span>—</span></div>
-</div></section>
-
-<section id="features"><div class="wrap">
-  <h2 class="reveal">Everything Markdown, nothing in the way</h2>
-  <p class="sub reveal">No library, no database, no account. Parchly opens <code>.md</code> files and writes them straight back.</p>
-  <div class="grid">
-    <div class="card reveal"><h3>Edit in place</h3><p>Headings, bold, links, code, tables and checkboxes render as you type. Syntax shows only on the current line.</p></div>
-    <div class="card reveal"><h3>Lists that keep up</h3><p>Return continues bullets, numbers and tasks. Tab nests an item, and numbered lists renumber themselves.</p></div>
-    <div class="card reveal"><h3>Real tables</h3><p>Pipe tables show as a grid. Tab moves between cells and tidies the source, and Return adds a row.</p></div>
-    <div class="card reveal"><h3>Linked notes</h3><p><code>[[Note]]</code>, <code>[[Note#Heading]]</code> and <code>#anchor</code> links. ⌘-click to follow, or to create a note that doesn't exist yet.</p></div>
-    <div class="card reveal"><h3>Math &amp; diagrams</h3><p>KaTeX math, Mermaid diagrams and colour-coded code in the live preview, all bundled and offline.</p></div>
-    <div class="card reveal"><h3>Quick Look</h3><p>Press Space on any <code>.md</code> file in Finder to see it rendered without opening an app.</p></div>
-    <div class="card reveal"><h3>Find anything</h3><p><kbd>⌘P</kbd> finds every Markdown file in the folder. <kbd>⇧⌘O</kbd> jumps to any heading.</p></div>
-    <div class="card reveal"><h3>A proper Mac app</h3><p>Autosave, Versions, tabs, Find &amp; Replace, export to PDF/HTML, Liquid Glass, and automatic updates.</p></div>
+<section id="features" data-rail="Features"><div class="wrap">
+  <div class="two" style="align-items:start">
+    <div>
+      <p class="eyebrow reveal">Plain files</p>
+      <h2 class="reveal">Your notes stay yours.</h2>
+      <p class="sub reveal" style="margin-bottom:20px">No library, no database, no account. Parchly opens <code>.md</code> files wherever they live and writes them straight back, so every other app can open them too.</p>
+      <a class="reveal" href="https://github.com/tapariapurv/parchly" style="font-size:14px">Read the source ↗</a>
+    </div>
+    <ul class="claims reveal">
+      <li>Your files are the only source of truth</li>
+      <li>iCloud Drive, Dropbox, any folder</li>
+      <li>No account, no telemetry, no lock-in</li>
+      <li>Renders in Finder with Quick Look</li>
+    </ul>
+  </div>
+  <div class="feats">
+    <div class="feat reveal"><h3>Edit in place</h3><p>Headings, bold, links, code, tables and checkboxes render as you type. Syntax shows only on the current line.</p></div>
+    <div class="feat reveal"><h3>Lists that keep up</h3><p>Return continues bullets, numbers and tasks. Tab nests an item, and numbered lists renumber themselves.</p></div>
+    <div class="feat reveal"><h3>Real tables</h3><p>Pipe tables show as a grid. Tab moves between cells and tidies the source, and Return adds a row.</p></div>
+    <div class="feat reveal"><h3>Linked notes</h3><p><code>[[Note]]</code>, <code>[[Note#Heading]]</code> and <code>#anchor</code> links. ⌘-click to follow, or to create a note that doesn't exist yet.</p></div>
+    <div class="feat reveal"><h3>Math &amp; diagrams</h3><p>KaTeX math, Mermaid diagrams and colour-coded code in the live preview, all bundled and offline.</p></div>
+    <div class="feat reveal"><h3>Quick Look</h3><p>Press Space on any <code>.md</code> file in Finder to see it rendered without opening an app.</p></div>
+    <div class="feat reveal"><h3>Find anything</h3><p><kbd>⌘P</kbd> finds every Markdown file in the folder. <kbd>⇧⌘O</kbd> jumps to any heading.</p></div>
+    <div class="feat reveal"><h3>A proper Mac app</h3><p>Autosave, Versions, tabs, Find &amp; Replace, export to PDF and HTML, Liquid Glass, and automatic updates.</p></div>
   </div>
 </div></section>
 
-<section id="themes"><div class="wrap">
-  <h2 class="reveal">Nine themes, one calm page</h2>
-  <p class="sub reveal">Paper follows your Mac's appearance, light by day and warm dark at night. Or pick a palette in Settings (<kbd>⌘,</kbd>). Try them here:</p>
-  <div class="swatches reveal" id="swatches"></div>
-  <div class="theme-frame reveal"><img id="theme-shot" src="assets/themes/paper-light.jpg" alt="Parchly editor in the selected theme" width="900" height="460"></div>
+<section id="themes" data-rail="Themes"><div class="wrap">
+  <p class="eyebrow reveal">Themes</p>
+  <h2 class="reveal">Nine themes. One calm page.</h2>
+  <p class="sub reveal">This page uses the app's own palettes. Pick one and the whole site changes with it, including the editor up top.</p>
+  <div class="themes">
+    <div class="tlist reveal" data-themes></div>
+    <div class="win reveal"><div class="wbar"><div class="lights"><i></i><i></i><i></i></div><span class="wtitle">Launch Plan.md</span></div><img id="theme-shot" class="shot" src="assets/themes/warm-dark.jpg" alt="Parchly editor in the selected theme" width="900" height="460"></div>
+  </div>
 </div></section>
 
-<section id="modes"><div class="wrap">
-  <h2 class="reveal">Document, Source and Preview</h2>
+<section id="modes" data-rail="Views"><div class="wrap">
+  <p class="eyebrow reveal">The real app</p>
+  <h2 class="reveal">Document, Source and Preview.</h2>
   <p class="sub reveal"><kbd>⌃⌘1</kbd> Document · <kbd>⌃⌘2</kbd> Source with optional line numbers · <kbd>⌘\</kbd> live side-by-side preview.</p>
-  <div class="tabs reveal" role="tablist"><span class="ind" aria-hidden="true"></span>
-    <button role="tab" aria-selected="true" data-src="assets/document.jpg">Document</button>
-    <button role="tab" aria-selected="false" data-src="assets/source.jpg">Source</button>
-    <button role="tab" aria-selected="false" data-src="assets/split.jpg">Preview</button>
-    <button role="tab" aria-selected="false" data-src="assets/sidebar.jpg">Outline</button>
-    <button role="tab" aria-selected="false" data-src="assets/settings.jpg">Settings</button>
+  <div class="win reveal">
+    <div class="wbar"><div class="lights"><i></i><i></i><i></i></div><div class="seg" role="tablist" aria-label="Screenshot" id="mode-tabs">
+      <button role="tab" aria-selected="true" data-src="assets/document.jpg">Document</button><button role="tab" aria-selected="false" data-src="assets/source.jpg">Source</button><button role="tab" aria-selected="false" data-src="assets/split.jpg">Preview</button><button role="tab" aria-selected="false" data-src="assets/sidebar.jpg">Outline</button><button role="tab" aria-selected="false" data-src="assets/settings.jpg">Settings</button></div></div>
+    <img id="mode-shot" class="shot" src="assets/document.jpg" alt="Parchly window in the selected mode" width="1600" height="1050" loading="lazy">
   </div>
-  <img id="mode-shot" class="shot reveal" src="assets/document.jpg" alt="Parchly window in the selected mode" width="1600" height="1050">
 </div></section>
 
-<section id="markdown"><div class="wrap">
-  <h2 class="reveal">Every Markdown you write</h2>
+<section id="markdown" data-rail="Markdown"><div class="wrap">
+  <p class="eyebrow reveal">Compatibility</p>
+  <h2 class="reveal">Every Markdown you write.</h2>
   <p class="sub reveal">CommonMark and GitHub Flavored Markdown, plus the extensions people actually use.</p>
-  <div class="table-wrap reveal"><table>
-    <tr><th>Element</th><th>Editor</th><th>Preview &amp; export</th><th>Quick Look</th></tr>
-    <tr><td>Headings (ATX &amp; setext), paragraphs, emphasis, strong, links, images</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td></tr>
-    <tr><td>Lists, nested lists, task lists</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td></tr>
-    <tr><td>Tables with alignment</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td></tr>
-    <tr><td>Code spans &amp; fenced code with syntax colouring</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td></tr>
-    <tr><td>Blockquotes &amp; GitHub alerts (<code>[!NOTE]</code>, <code>[!WARNING]</code>…)</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td></tr>
-    <tr><td>Strikethrough, autolinks, footnotes, raw HTML, YAML front matter</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td></tr>
-    <tr><td><code>==highlight==</code>, <code>:emoji:</code>, heading anchors</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td></tr>
-    <tr><td><code>[[Wiki links]]</code> &amp; cross-references</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td></tr>
-    <tr><td>Math <code>$…$</code> / <code>$$…$$</code> (KaTeX)</td><td class="y">✓</td><td class="y">✓</td><td>source</td></tr>
-    <tr><td>Mermaid diagrams</td><td class="y">✓</td><td class="y">✓</td><td>source</td></tr>
+  <div class="tbl reveal"><table class="data">
+    <caption>Supported syntax · editor, preview and export, Finder Quick Look</caption>
+    <thead><tr><th>Element</th><th>Editor</th><th>Preview &amp; export</th><th>Quick Look</th></tr></thead>
+    <tbody>
+    <tr><td>Headings (ATX &amp; setext), paragraphs, emphasis, strong, links, images</td><td class="y">yes</td><td class="y">yes</td><td class="y">yes</td></tr>
+    <tr><td>Lists, nested lists, task lists</td><td class="y">yes</td><td class="y">yes</td><td class="y">yes</td></tr>
+    <tr><td>Tables with alignment</td><td class="y">yes</td><td class="y">yes</td><td class="y">yes</td></tr>
+    <tr><td>Code spans &amp; fenced code with syntax colouring</td><td class="y">yes</td><td class="y">yes</td><td class="y">yes</td></tr>
+    <tr><td>Blockquotes &amp; GitHub alerts (<code>[!NOTE]</code>, <code>[!WARNING]</code>…)</td><td class="y">yes</td><td class="y">yes</td><td class="y">yes</td></tr>
+    <tr><td>Strikethrough, autolinks, footnotes, raw HTML, YAML front matter</td><td class="y">yes</td><td class="y">yes</td><td class="y">yes</td></tr>
+    <tr><td><code>==highlight==</code>, <code>:emoji:</code>, heading anchors</td><td class="y">yes</td><td class="y">yes</td><td class="y">yes</td></tr>
+    <tr><td><code>[[Wiki links]]</code> &amp; cross-references</td><td class="y">yes</td><td class="y">yes</td><td class="y">yes</td></tr>
+    <tr><td>Math <code>$…$</code> / <code>$$…$$</code> (KaTeX)</td><td class="y">yes</td><td class="y">yes</td><td>source</td></tr>
+    <tr><td>Mermaid diagrams</td><td class="y">yes</td><td class="y">yes</td><td>source</td></tr>
+    </tbody>
   </table></div>
 </div></section>
 
-<section id="quicklook"><div class="wrap split">
-  <div>
-    <h2 class="reveal">Press Space in Finder</h2>
-    <p class="sub reveal">Parchly's Quick Look extension renders any <code>.md</code> file, with tables, task lists, code and alerts, the moment you press Space. It uses the same renderer as the app.</p>
-  </div>
-  <img class="shot reveal" src="assets/quicklook.jpg" alt="Finder Quick Look showing a rendered Markdown file" width="1000" height="1100">
-</div></section>
-
-<section id="install"><div class="wrap">
-  <h2 class="reveal">Install in under a minute</h2>
+<section id="install" data-rail="Install"><div class="wrap">
+  <p class="eyebrow reveal">Install</p>
+  <h2 class="reveal">Install in under a minute.</h2>
   <p class="sub reveal">Parchly needs macOS 14 Sonoma or later, on Apple silicon or Intel.</p>
   <div class="steps">
-    <div class="step reveal"><div><h3>Paste one line into Terminal</h3><p>Open <b>Terminal</b> (⌘Space, type “Terminal”), paste the command below and press Return. It downloads the latest release, installs it into Applications, turns on Quick Look and opens Parchly.</p>
-      <div class="cmd" style="margin:14px 0 0"><code>curl -fsSL https://tapariapurv.github.io/parchly/install.sh | bash</code><button class="copy" type="button" aria-label="Copy install command"><span class="c1">Copy</span><span class="c2" aria-hidden="true">Copied ✓</span></button></div></div></div>
-    <div class="step reveal"><div><h3>Or use the disk image</h3><p>Download <a href="https://github.com/tapariapurv/parchly/releases/latest/download/Parchly.dmg">Parchly.dmg</a>, open it and drag Parchly onto Applications. The app isn't notarized by Apple yet, so the first time you open it, go to <b>System Settings › Privacy &amp; Security</b> and click <b>Open Anyway</b>. You only do this once.</p></div></div>
-    <div class="step reveal"><div><h3>Make it your Markdown app</h3><p>Select any <code>.md</code> file in Finder, choose <b>Get Info</b>, set <b>Open with</b> to Parchly and click <b>Change All</b>. If another app previews Markdown, choose Parchly under <b>System Settings › General › Login Items &amp; Extensions › Quick Look</b>.</p></div></div>
-    <div class="step reveal"><div><h3>That's it. Updates are automatic</h3><p>Parchly checks for updates daily and installs them in the background. You can change this, or check now, in <b>Settings › Updates</b>. To uninstall, drag Parchly to the Trash.</p></div></div>
+    <div class="step reveal"><span class="n">01 · TERMINAL</span><h3>Paste one line</h3><p>Open <b>Terminal</b> (⌘Space, type “Terminal”), paste this and press Return. It downloads the latest release, installs it into Applications, turns on Quick Look and opens Parchly.</p>
+      <div class="cmd"><code>curl -fsSL https://tapariapurv.github.io/parchly/install.sh | bash</code><button class="copy" type="button" aria-label="Copy install command"><span class="c1">Copy</span><span class="c2" aria-hidden="true">✓</span></button></div></div>
+    <div class="step reveal"><span class="n">02 · DISK IMAGE</span><h3>Or drag and drop</h3><p>Download <a href="https://github.com/tapariapurv/parchly/releases/latest/download/Parchly.dmg">Parchly.dmg</a>, open it and drag Parchly onto Applications. The app isn't notarized by Apple yet, so the first time you open it, go to <b>System Settings › Privacy &amp; Security</b> and click <b>Open Anyway</b>. You only do this once.</p></div>
+    <div class="step reveal"><span class="n">03 · DEFAULT APP</span><h3>Make it your Markdown app</h3><p>Select any <code>.md</code> file in Finder, choose <b>Get Info</b>, set <b>Open with</b> to Parchly and click <b>Change All</b>. If another app previews Markdown, choose Parchly under <b>System Settings › General › Login Items &amp; Extensions › Quick Look</b>.</p></div>
+    <div class="step reveal"><span class="n">04 · UPDATES</span><h3>That's it</h3><p>Parchly checks for updates daily and installs them in the background. Change this, or check now, in <b>Settings › Updates</b>. To uninstall, drag Parchly to the Trash.</p></div>
   </div>
 </div></section>
 
-<section id="shortcuts"><div class="wrap">
-  <h2 class="reveal">Keyboard first</h2>
-  <p class="sub reveal">Every command is in the menu bar, and Help search (<kbd>⇧⌘/</kbd>) works as a command palette.</p>
-  <div class="table-wrap reveal"><table>
-    <tr><th>Action</th><th>Keys</th><th>Action</th><th>Keys</th></tr>
+<section id="shortcuts" data-rail="Keys"><div class="wrap">
+  <p class="eyebrow reveal">Keyboard first</p>
+  <h2 class="reveal">Every command has a key.</h2>
+  <p class="sub reveal">Everything is in the menu bar, and Help search (<kbd>⇧⌘/</kbd>) works as a command palette.</p>
+  <div class="tbl reveal"><table class="data">
+    <thead><tr><th>Action</th><th>Keys</th><th>Action</th><th>Keys</th></tr></thead>
+    <tbody>
     <tr><td>Bold · Italic · Strike</td><td><kbd>⌘B</kbd> <kbd>⌘I</kbd> <kbd>⇧⌘X</kbd></td><td>Heading 1–6 · Body</td><td><kbd>⌘1</kbd>–<kbd>⌘6</kbd> <kbd>⌘0</kbd></td></tr>
     <tr><td>Inline code · Link</td><td><kbd>⌃`</kbd> <kbd>⌘K</kbd></td><td>Bullets · Numbers · Tasks</td><td><kbd>⇧⌘8</kbd> <kbd>⇧⌘7</kbd> <kbd>⇧⌘9</kbd></td></tr>
     <tr><td>Tick a task</td><td><kbd>⌘L</kbd></td><td>Quote · Code block · Table</td><td><kbd>⌥⌘Q</kbd> <kbd>⌥⌘C</kbd> <kbd>⌥⌘T</kbd></td></tr>
     <tr><td>Indent · Outdent</td><td><kbd>⌘]</kbd> <kbd>⌘[</kbd></td><td>Move line · Duplicate</td><td><kbd>⌃⌘↑↓</kbd> <kbd>⇧⌘D</kbd></td></tr>
     <tr><td>Document · Source · Preview</td><td><kbd>⌃⌘1</kbd> <kbd>⌃⌘2</kbd> <kbd>⌘\</kbd></td><td>Go to file · heading</td><td><kbd>⌘P</kbd> <kbd>⇧⌘O</kbd></td></tr>
     <tr><td>Formatting bar</td><td><kbd>⇧⌘B</kbd></td><td>Settings</td><td><kbd>⌘,</kbd></td></tr>
+    </tbody>
   </table></div>
 </div></section>
 
-<section id="faq"><div class="wrap">
-  <h2 class="reveal">Questions</h2>
+<section id="faq" data-rail="Questions"><div class="wrap faq">
+  <p class="eyebrow reveal">Questions</p>
+  <h2 class="reveal">Good to know.</h2>
+  <div style="margin-top:40px">
   <details class="reveal"><summary>Is Parchly really free?</summary><p>Yes. Parchly is free and open source (MIT). There's no account, subscription, tracking or data collection. See the <a href="privacy.html">privacy policy</a>.</p></details>
   <details class="reveal"><summary>Do I need to know Markdown?</summary><p>No. The formatting bar and the Format menu do everything for you. Parchly also opens a short guide the first time you launch it (Help › Markdown Guide).</p></details>
   <details class="reveal"><summary>Where are my notes stored?</summary><p>Wherever you save them: ordinary <code>.md</code> files in any folder, including iCloud Drive or Dropbox. Parchly has no database, so other apps can open the same files.</p></details>
   <details class="reveal"><summary>Can I link notes together?</summary><p>Yes. Type <code>[[Another Note]]</code> to link to a note in the same folder, or <code>[[Another Note#Heading]]</code> to link to a section. ⌘-click a link to follow it. If the note doesn't exist, Parchly creates it.</p></details>
   <details class="reveal"><summary>Does it support math, diagrams and GitHub Markdown?</summary><p>Yes: GitHub Flavored Markdown (tables, task lists, footnotes, strikethrough, autolinks, alerts), plus KaTeX math and Mermaid diagrams in the preview. See the <a href="#markdown">support table</a>.</p></details>
   <details class="reveal"><summary>How do I update Parchly?</summary><p>You don't need to: it updates itself. To check right away, choose Parchly › Check for Updates.</p></details>
+  </div>
+</div></section>
+
+<section class="close" id="close" data-rail="Free"><div class="wrap">
+  <h2 class="reveal">Free. Open source.<br>MIT. No account.</h2>
+  <p class="sub reveal">No telemetry, no cookies, no subscription. Your notes stay ordinary files on your Mac, and this site doesn't track you either.</p>
+  <div class="reveal"><a class="btn primary" href="https://github.com/tapariapurv/parchly/releases/latest/download/Parchly.dmg"><svg viewBox="0 0 17 20" aria-hidden="true"><path d="M14.1 10.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.7 1.3 10.2.9 1.2 1.9 2.6 3.2 2.6 1.3-.1 1.8-.8 3.3-.8 1.6 0 2 .8 3.4.8 1.4 0 2.3-1.3 3.1-2.5 1-1.4 1.4-2.8 1.4-2.9-.1 0-2.7-1-2.7-4.1zM11.6 3c.7-.9 1.2-2 1-3.2-1 0-2.3.7-3 1.6-.7.8-1.2 2-1.1 3.1 1.2.1 2.3-.6 3.1-1.5z"/></svg>Download for Mac</a></div>
+  <p class="micro reveal">macOS 14+ · Parchly.dmg · or curl -fsSL https://tapariapurv.github.io/parchly/install.sh | bash</p>
 </div></section>
 </main>
 
-<footer><div class="wrap">Parchly · free &amp; open source (MIT) · <a href="https://github.com/tapariapurv/parchly">GitHub</a> · <a href="https://github.com/tapariapurv/parchly/releases">Releases</a> · <a href="guide.html">Markdown guide</a> · <a href="privacy.html">Privacy</a></div></footer>
+<footer><div class="wrap">
+  <div class="fgrid">
+    <a class="brand" href="#top"><img src="assets/icon.png" alt="" width="26" height="26">Parchly</a>
+    <div class="fcols">
+      <div><b>Product</b><a href="https://github.com/tapariapurv/parchly/releases">Releases</a><a href="https://github.com/tapariapurv/parchly">GitHub</a><a href="privacy.html">Privacy</a></div>
+      <div><b>Learn</b><a href="guide.html">Markdown guide</a><a href="#install">Install</a><a href="#faq">FAQ</a><a href="llms.txt">llms.txt</a></div>
+    </div>
+  </div>
+  <p>Parchly · free &amp; open source (MIT) · no cookies, no analytics, no account.</p>
+</div></footer>
 
 <script>
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const header = document.querySelector('header'), shot = document.querySelector('.stage .shot');
-let ticking = false;
-function onScroll() {
-  ticking = false;
-  header.classList.toggle('scrolled', scrollY > 8);
-  if (reduce || !shot) return;
-  const p = Math.min(1, Math.max(0, scrollY / (innerHeight * 0.55)));
-  shot.style.setProperty('--tilt', (14 * (1 - p)).toFixed(2) + 'deg');
-  shot.style.setProperty('--sc', (0.96 + 0.04 * p).toFixed(4));
-}
-addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(onScroll); } }, { passive: true });
-onScroll();
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const root = document.documentElement, wait = ms => new Promise(r => setTimeout(r, ms));
+addEventListener('scroll', () => $('header').classList.toggle('scrolled', scrollY > 8), { passive: true });
 
-const film = document.querySelector('.film'), filmV = film.querySelector('video');
-film.querySelector('.play').addEventListener('click', () => { film.classList.add('on'); filmV.controls = true; filmV.play(); });
-filmV.addEventListener('ended', () => { film.classList.remove('on'); filmV.controls = false; filmV.load(); });
+// Ambient Markdown tokens on a jittered grid; a few glow now and then.
+(() => {
+  const toks = ['**bold**', '# heading', '`code`', '_italic_', '- [ ] task', '- [x] done', '> quote', '[[link]]', '==mark==', '~~old~~', '| table |', '$e^{iπ}$', '---', '```swift', '[open](url)', '1. item', '> [!TIP]', '## notes'];
+  const amb = $('.ambient'), frag = document.createDocumentFragment();
+  for (let y = 30; y < innerHeight + 60; y += 68) for (let x = 10; x < innerWidth; x += 170) {
+    const s = document.createElement('span');
+    s.textContent = toks[(Math.random() * toks.length) | 0];
+    s.style.cssText = `left:${x + Math.random() * 70}px;top:${y + Math.random() * 22}px`;
+    if (!reduce && Math.random() < .07) { s.className = 'lit'; s.style.setProperty('--d', -Math.random() * 7 + 's'); }
+    frag.appendChild(s);
+  }
+  amb.appendChild(frag);
+})();
 
-const io = new IntersectionObserver(es => es.forEach(e => {
-  if (!e.isIntersecting) return;
-  const sibs = [...e.target.parentElement.children].filter(x => x.classList.contains('reveal'));
-  e.target.style.setProperty('--d', Math.min(sibs.indexOf(e.target), 6) * 0.05 + 's');
-  e.target.classList.add('in'); io.unobserve(e.target);
-}), { rootMargin: '0px 0px -8% 0px' });
-document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+// Popovers open from their trigger; scrolling closes them.
+$$('[popover]').forEach(p => p.addEventListener('beforetoggle', e => {
+  if (e.newState !== 'open') return;
+  const r = $(`[popovertarget="${p.id}"]`).getBoundingClientRect();
+  p.style.top = r.bottom + 8 + 'px';
+  if (p.dataset.align === 'right') { p.style.right = innerWidth - r.right + 'px'; p.style.left = 'auto'; }
+  else { p.style.left = Math.max(16, r.left) + 'px'; p.style.right = 'auto'; }
+}));
+addEventListener('scroll', () => $$(':popover-open').forEach(p => p.hidePopover()), { passive: true });
 
 // Copy buttons confirm for 1.6s.
-document.querySelectorAll('.copy').forEach(btn => btn.addEventListener('click', async () => {
+$$('.copy').forEach(btn => btn.addEventListener('click', async () => {
   const code = btn.parentElement.querySelector('code');
   try { await navigator.clipboard.writeText(code.textContent); } catch { getSelection().selectAllChildren(code); return; }
   btn.classList.add('done'); clearTimeout(btn.t); btn.t = setTimeout(() => btn.classList.remove('done'), 1600);
@@ -321,50 +585,182 @@ document.querySelectorAll('.copy').forEach(btn => btn.addEventListener('click', 
 function swapImg(img, src) {
   if (img.getAttribute('src') === src) return;
   const next = new Image(); next.src = src; img.classList.add('swap');
-  setTimeout(() => next.decode().catch(() => {}).then(() => { img.src = src; img.classList.remove('swap'); }), reduce ? 0 : 200);
+  setTimeout(() => next.decode().catch(() => {}).then(() => { img.src = src; img.classList.remove('swap'); }), reduce ? 0 : 180);
 }
 
-// Mode tabs: sliding underline + blur crossfade.
-const tabs = [...document.querySelectorAll('.tabs button')], ind = document.querySelector('.tabs .ind'), modeShot = document.getElementById('mode-shot');
-function moveInd(b) { ind.style.width = b.offsetWidth - 20 + 'px'; ind.style.transform = `translateX(${b.offsetLeft + 10}px)`; }
-tabs.forEach(b => b.addEventListener('click', () => { tabs.forEach(x => x.setAttribute('aria-selected', x === b)); moveInd(b); swapImg(modeShot, b.dataset.src); }));
-moveInd(tabs[0]); addEventListener('resize', () => moveInd(tabs.find(t => t.getAttribute('aria-selected') === 'true')));
-
-// Theme switcher: swaps the screenshot and morphs the page's own colours.
+// Themes: the app's palettes restyle the whole page.
 const themes = [
-  ['paper-light', 'Paper', '#f7f4ee', '#307afe', '#292522', '#fffdfa', '#d9d2c8', '#181513'],
-  ['warm-dark', 'Warm Dark', '#171614', '#6ea8ff', '#e3ddd5', '#24211e', '#3d3832', '#f4eee5'],
-  ['nord', 'Nord', '#2e3440', '#88c0d0', '#d8dee9', '#3b4252', '#434c5e', '#eceff4'],
-  ['solarized-light', 'Solarized Light', '#fdf6e3', '#268bd2', '#526b72', '#eee8d5', '#e3dcc6', '#586e75'],
-  ['high-contrast', 'High Contrast', '#ffffff', '#0000cc', '#000000', '#f2f2f2', '#cccccc', '#000000'],
-  ['sepia', 'Sepia', '#f3e9d7', '#b4652b', '#3f3226', '#faf3e6', '#dbc9ab', '#2c2118'],
-  ['solarized-dark', 'Solarized Dark', '#002b36', '#268bd2', '#93a1a1', '#073642', '#0f4a57', '#eee8d5'],
-  ['forest', 'Forest', '#151c18', '#7cc48b', '#d6dfd5', '#1e2722', '#2f3b33', '#eef4ea'],
-  ['midnight', 'Midnight', '#10131c', '#8b9cff', '#d7dcea', '#181d2a', '#2a3145', '#f1f3fa'],
+  ['paper-light', 'Paper Light', 'light', '#f7f4ee', '#307afe'], ['warm-dark', 'Warm Dark', 'dark', '#171614', '#6ea8ff'],
+  ['nord', 'Nord', 'dark', '#2e3440', '#88c0d0'], ['solarized-light', 'Solarized Light', 'light', '#fdf6e3', '#268bd2'],
+  ['solarized-dark', 'Solarized Dark', 'dark', '#002b36', '#268bd2'], ['sepia', 'Sepia', 'light', '#f3e9d7', '#b4652b'],
+  ['forest', 'Forest', 'dark', '#151c18', '#7cc48b'], ['midnight', 'Midnight', 'dark', '#10131c', '#8b9cff'],
+  ['high-contrast', 'High Contrast', 'light', '#ffffff', '#0000cc'], ['system', 'System', 'auto', '#f7f4ee', '#171614'],
 ];
-const sw = document.getElementById('swatches'), themeShot = document.getElementById('theme-shot'), root = document.documentElement;
-const vars = ['--bg', '--accent', '--link', '--ink', '--surface', '--rule', '--heading', '--muted', '--band'];
-themes.forEach(([id, name, bg, accent, ink, surface, rule, heading], i) => {
-  const b = document.createElement('button');
-  b.className = 'sw'; b.type = 'button'; b.setAttribute('aria-pressed', i === 0);
-  b.innerHTML = `<b style="--a:${bg};--b:${accent}"></b>${name}`;
-  b.addEventListener('click', () => {
-    sw.querySelectorAll('.sw').forEach(x => x.setAttribute('aria-pressed', x === b));
-    swapImg(themeShot, `assets/themes/${id}.jpg`);
-    if (i === 0) return vars.forEach(v => root.style.removeProperty(v));
-    [bg, accent, accent, ink, surface, rule, heading, ink + 'b3', surface].forEach((c, k) => root.style.setProperty(vars[k], c));
-  });
-  sw.appendChild(b);
+const dark = matchMedia('(prefers-color-scheme: dark)');
+let choice = 'warm-dark'; try { choice = localStorage.getItem('parchly-theme') || choice; } catch {}
+const resolve = id => id === 'system' ? (dark.matches ? 'warm-dark' : 'paper-light') : id;
+function setTheme(id, save) {
+  choice = id;
+  if (save) { try { localStorage.setItem('parchly-theme', id); } catch {} root.classList.add('theming'); clearTimeout(setTheme.t); setTheme.t = setTimeout(() => root.classList.remove('theming'), 600); }
+  root.dataset.theme = resolve(id);
+  $$('[data-theme-opt]').forEach(b => b.setAttribute('aria-checked', b.dataset.themeOpt === id));
+  swapImg($('#theme-shot'), `assets/themes/${resolve(id)}.jpg`);
+  $('meta[name=theme-color]').content = getComputedStyle(root).getPropertyValue('--bg').trim();
+}
+$$('[data-themes]').forEach(list => themes.forEach(([id, name, kind, a, b]) => {
+  const o = document.createElement('button');
+  o.type = 'button'; o.className = 'opt'; o.dataset.themeOpt = id; o.setAttribute('role', 'menuitemradio');
+  o.innerHTML = `<b style="--a:${a};--b:${b}"></b>${name}<small>${kind}</small>`;
+  o.addEventListener('click', () => { setTheme(id, true); if (list.closest('[popover]')) $('#theme-menu').hidePopover(); });
+  list.appendChild(o);
+}));
+dark.addEventListener('change', () => choice === 'system' && setTheme('system'));
+setTheme(choice);
+
+// Section rail.
+const rail = $('.rail'), railed = $$('[data-rail]');
+railed.forEach(s => { const a = document.createElement('a'); a.href = '#' + s.id; a.innerHTML = `<i></i><span>${s.dataset.rail}</span>`; a.setAttribute('aria-label', s.dataset.rail); rail.appendChild(a); });
+const railIO = new IntersectionObserver(es => es.forEach(e => {
+  if (e.isIntersecting) rail.querySelectorAll('a').forEach((a, i) => a.classList.toggle('on', railed[i] === e.target));
+}), { rootMargin: '-45% 0px -50% 0px' });
+railed.forEach(s => railIO.observe(s));
+
+// Scroll reveals, lightly staggered among siblings.
+const io = new IntersectionObserver(es => es.forEach(e => {
+  if (!e.isIntersecting) return;
+  const sibs = [...e.target.parentElement.children].filter(x => x.classList.contains('reveal'));
+  e.target.style.setProperty('--d', Math.min(sibs.indexOf(e.target), 6) * 0.06 + 's');
+  e.target.classList.add('in'); io.unobserve(e.target);
+}), { rootMargin: '0px 0px -8% 0px' });
+$$('.reveal').forEach(el => io.observe(el));
+
+// Live editor: a small Markdown renderer for the hero window.
+const sample = `# Launch Plan
+
+Parchly is a **calm**, _native_ Markdown editor. Notes link together with [[Design Notes]], and ==highlights== stand out.
+
+> [!TIP]
+> Use the formatting bar below, or just type Markdown.
+
+## This week
+
+- [x] Write the announcement
+- [x] Record the demo
+- [ ] Ship version 1.1
+
+## Numbers
+
+| Metric | Target | Status |
+|---|---|---|
+| Launch day downloads | 1,000 | On track |
+| Crash-free sessions | 99.9% | ✓ |
+
+The growth model is $N(t) = N_0 e^{rt}$.
+
+\`\`\`swift
+func ship(_ version: String) -> Bool {
+  return version.hasPrefix("1.")
+}
+\`\`\`
+`;
+const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function inline(s) {
+  const codes = [];
+  s = esc(s).replace(/`([^`]+)`/g, (_, c) => `\u0000${codes.push(c) - 1}\u0000`);
+  s = s.replace(/\$([^$]+)\$/g, (_, m) => `<span class="math">${m.replace(/_\{?(\w+)\}?/g, '<sub>$1</sub>').replace(/\^\{?([^}\s]+)\}?/g, '<sup>$1</sup>')}</span>`)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[^\w*])[*_](?=\S)(.+?)[*_](?!\w)/g, '$1<em>$2</em>')
+    .replace(/~~(.+?)~~/g, '<s>$1</s>').replace(/==(.+?)==/g, '<mark>$1</mark>')
+    .replace(/\[\[(.+?)\]\]/g, '<a class="wiki">$1</a>')
+    .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  return s.replace(/\u0000(\d+)\u0000/g, (_, i) => `<code>${codes[i]}</code>`);
+}
+const blockStart = /^(#{1,6}\s|```|>|\||\s*([-*+]|\d+\.)\s|(-{3,}|\*{3,})\s*$)/;
+function render(src) {
+  const L = src.split('\n'), out = [];
+  for (let i = 0, m; i < L.length;) {
+    const l = L[i];
+    if (/^```/.test(l)) { const b = []; i++; while (i < L.length && !/^```/.test(L[i])) b.push(esc(L[i++])); i++; out.push(`<pre><code>${b.join('\n')}</code></pre>`); }
+    else if ((m = l.match(/^(#{1,6})\s+(.*)/))) { out.push(`<h${m[1].length}>${inline(m[2])}</h${m[1].length}>`); i++; }
+    else if (/^(-{3,}|\*{3,})\s*$/.test(l)) { out.push('<hr>'); i++; }
+    else if (/^>/.test(l)) {
+      const b = []; while (i < L.length && /^>/.test(L[i])) b.push(L[i++].replace(/^>\s?/, ''));
+      const a = b[0].match(/^\[!(\w+)\]\s*$/);
+      out.push(a ? `<div class="alert ${a[1].toLowerCase()}"><b>${a[1][0] + a[1].slice(1).toLowerCase()}</b>${render(b.slice(1).join('\n'))}</div>` : `<blockquote>${render(b.join('\n'))}</blockquote>`);
+    } else if (/^\|/.test(l)) {
+      const rows = []; while (i < L.length && /^\|/.test(L[i])) rows.push(L[i++]);
+      const cells = (r, t) => r.replace(/^\||\|\s*$/g, '').split('|').map(c => `<${t}>${inline(c.trim())}</${t}>`).join('');
+      const head = rows[1] && /^[|\s:-]+$/.test(rows[1]);
+      out.push(`<table>${head ? `<tr>${cells(rows[0], 'th')}</tr>` : ''}${rows.slice(head ? 2 : 0).map(r => `<tr>${cells(r, 'td')}</tr>`).join('')}</table>`);
+    } else if (/^\s*([-*+]|\d+\.)\s/.test(l)) {
+      const ol = /^\s*\d/.test(l), items = [];
+      while (i < L.length && /^\s*([-*+]|\d+\.)\s/.test(L[i])) {
+        const t = L[i++].replace(/^\s*([-*+]|\d+\.)\s+/, ''), task = t.match(/^\[( |x|X)\]\s*(.*)/);
+        items.push(task ? `<li class="task${task[1] === ' ' ? '' : ' done'}"><span class="box"></span>${inline(task[2])}</li>` : `<li>${inline(t)}</li>`);
+      }
+      out.push(`<${ol ? 'ol' : 'ul'}>${items.join('')}</${ol ? 'ol' : 'ul'}>`);
+    } else if (!l.trim()) i++;
+    else { const b = []; while (i < L.length && L[i].trim() && !blockStart.test(L[i])) b.push(L[i++]); out.push(`<p>${inline(b.join(' '))}</p>`); }
+  }
+  return out.join('');
+}
+
+const live = $('#live'), src = $('#src'), doc = $('#doc');
+src.value = sample;
+const words = () => (src.value.match(/[\w’']+/g) || []).length;
+function update() { doc.innerHTML = render(src.value); $('#words').textContent = words() + ' words'; }
+function caret() {
+  const before = src.value.slice(0, src.selectionStart).split('\n');
+  $('#pos').textContent = `Ln ${before.length}, Col ${before.at(-1).length + 1}`;
+}
+src.addEventListener('input', () => { update(); caret(); $('#edited').textContent = '— Edited'; });
+['keyup', 'click', 'select', 'focus'].forEach(t => src.addEventListener(t, caret));
+function setMode(m) { live.dataset.mode = m; $$('#live .seg button').forEach(b => b.setAttribute('aria-selected', b.dataset.mode === m)); }
+$$('#live .seg button').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+if (matchMedia('(max-width: 640px)').matches) setMode('document');
+// Formatting bar and ⌘B / ⌘I wrap the selection, or prefix the current line.
+function format(f) {
+  if (live.dataset.mode === 'document') setMode('split');
+  src.focus();
+  const s = src.selectionStart, e = src.selectionEnd, v = src.value;
+  if (f === 'h' || f.endsWith(' ')) {
+    const ls = v.lastIndexOf('\n', s - 1) + 1, line = v.slice(ls, v.indexOf('\n', ls) < 0 ? v.length : v.indexOf('\n', ls));
+    const p = f === 'h' ? (/^#{1,5} /.test(line) ? '#' : /^###### /.test(line) ? '' : '# ') : f;
+    src.setRangeText(p, ls, ls, 'end'); src.setSelectionRange(s + p.length, e + p.length);
+  } else {
+    const sel = v.slice(s, e) || 'text';
+    src.setRangeText(f + sel + f, s, e, 'end'); src.setSelectionRange(s + f.length, s + f.length + sel.length);
+  }
+  src.dispatchEvent(new Event('input'));
+}
+$$('.fbar button').forEach(b => b.addEventListener('mousedown', e => { e.preventDefault(); format(b.dataset.f); }));
+src.addEventListener('keydown', e => {
+  if (!(e.metaKey || e.ctrlKey) || e.shiftKey || e.altKey) return;
+  const f = { b: '**', i: '_' }[e.key.toLowerCase()];
+  if (f) { e.preventDefault(); format(f); }
 });
+update();
 
-// Formatting bar: buttons press in sequence when it scrolls into view.
-const keys = [...document.querySelectorAll('#fbar span')];
+// The difference: raw Quick Look text, then Parchly's rendering.
+$('#raw').textContent = sample.split('\n## Numbers')[0] + '\n## Numbers\n\n| Metric | Target | Status |\n|---|---|---|\n| Launch day downloads | 1,000 | On track |';
+const diff = $('#diff');
+function setDiff(v) { diff.dataset.v = v; $$('#diff .seg button').forEach(b => b.setAttribute('aria-selected', b.dataset.v === v)); $('#diff-state').textContent = v === 'raw' ? 'Plain text' : 'Rendered by Parchly'; }
+$$('#diff .seg button').forEach(b => b.addEventListener('click', () => { diff.touched = true; setDiff(b.dataset.v); }));
 new IntersectionObserver(async (es, o) => {
-  if (!es[0].isIntersecting || reduce) return; o.disconnect();
-  for (let round = 0; round < 2; round++) for (const k of keys) { k.classList.add('on'); await new Promise(r => setTimeout(r, 140)); k.classList.remove('on'); }
-}, { threshold: 0.6 }).observe(document.getElementById('fbar'));
+  if (!es[0].isIntersecting) return; o.disconnect();
+  await wait(1400); if (!diff.touched) setDiff('parchly');
+}, { threshold: 0.6 }).observe(diff);
 
-// Live demo: type each line as Markdown, then let its syntax melt away.
+// Mode screenshots.
+const tabs = $$('#mode-tabs button');
+tabs.forEach(b => b.addEventListener('click', () => { tabs.forEach(x => x.setAttribute('aria-selected', x === b)); swapImg($('#mode-shot'), b.dataset.src); }));
+
+// Film.
+const film = $('.film'), filmV = film.querySelector('video');
+film.querySelector('.play').addEventListener('click', () => { film.classList.add('on'); filmV.controls = true; filmV.play(); });
+filmV.addEventListener('ended', () => { film.classList.remove('on'); filmV.controls = false; filmV.load(); });
+
+// Typing demo: type each line as Markdown, then let its syntax melt away.
 const lines = [
   { cls: 'h1', parts: [['mk', '# '], ['t', 'Launch notes']] },
   { parts: [['t', 'Ship '], ['mk', '**'], ['b', 'Parchly'], ['mk', '**'], ['t', ' with '], ['mk', '=='], ['m', 'Quick Look'], ['mk', '=='], ['t', '.']] },
@@ -372,7 +768,7 @@ const lines = [
   { parts: [['mk', '- [ ] '], ['box', ''], ['t', 'Link it to '], ['mk', '[['], ['a', 'Roadmap'], ['mk', ']]']] },
   { cls: 'q', parts: [['mk', '> '], ['t', 'Simplicity is prerequisite for reliability.']] },
 ];
-const body = document.getElementById('demo-body'), wait = ms => new Promise(r => setTimeout(r, ms));
+const body = $('#demo-body');
 function build() {
   body.innerHTML = '';
   return lines.map(l => {
@@ -387,13 +783,13 @@ function build() {
   });
 }
 async function play() {
-  const built = build(), caret = document.createElement('span'); caret.className = 'caret';
+  const built = build(), c = document.createElement('span'); c.className = 'caret';
   if (reduce) { built.forEach(({ ln, spans }) => { spans.forEach(([sp, t]) => sp.textContent = t); ln.classList.add('done'); }); return; }
   for (const { ln, spans } of built) {
-    for (const [sp, text] of spans) { sp.after(caret); for (const ch of text) { sp.textContent += ch; await wait(ch === ' ' ? 30 : 40 + Math.random() * 40); } }
+    for (const [sp, text] of spans) { sp.after(c); for (const ch of text) { sp.textContent += ch; await wait(ch === ' ' ? 30 : 40 + Math.random() * 40); } }
     await wait(380); ln.classList.add('done'); await wait(220);
   }
-  caret.remove(); await wait(4200); play();
+  c.remove(); await wait(4200); play();
 }
 const demoIO = new IntersectionObserver(es => { if (es[0].isIntersecting) { demoIO.disconnect(); play(); } }, { threshold: 0.35 });
 demoIO.observe(body);
