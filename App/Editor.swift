@@ -368,6 +368,7 @@ final class MarkdownTextView: NSTextView {
     @objc func toggleItalic(_ sender: Any?) { wrap("*") }
     @objc func toggleStrike(_ sender: Any?) { wrap("~~") }
     @objc func toggleInlineCode(_ sender: Any?) { wrap("`") }
+    @objc func toggleHighlight(_ sender: Any?) { wrap("==") }
 
     @objc func insertLink(_ sender: Any?) {
         breakUndoCoalescing()
@@ -389,7 +390,7 @@ final class MarkdownTextView: NSTextView {
     @objc func toggleQuote(_ sender: Any?) {
         breakUndoCoalescing()
         transformLines { lines in
-            let quoted = lines.allSatisfy { $0.hasPrefix(">") || $0.isEmpty }
+            let quoted = lines.contains { !$0.isEmpty } && lines.allSatisfy { $0.hasPrefix(">") || $0.isEmpty }
             return lines.map { l in quoted ? String(l.dropFirst(l.hasPrefix("> ") ? 2 : (l.hasPrefix(">") ? 1 : 0))) : "> " + l }
         }
     }
@@ -561,7 +562,9 @@ final class EditorController: NSViewController, NSTextViewDelegate, NSTextStorag
             outline.centerYAnchor.constraint(equalTo: root.centerYAnchor),
             outline.widthAnchor.constraint(equalToConstant: 30),
             outline.heightAnchor.constraint(equalToConstant: 30),
-            formatBar.centerXAnchor.constraint(equalTo: root.centerXAnchor),
+            { let c = formatBar.centerXAnchor.constraint(equalTo: root.centerXAnchor); c.priority = .defaultLow; return c }(),
+            formatBar.leadingAnchor.constraint(greaterThanOrEqualTo: root.leadingAnchor, constant: 12),
+            formatBar.trailingAnchor.constraint(lessThanOrEqualTo: statusPill.leadingAnchor, constant: -8),
             formatBar.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -14),
         ])
         root.frame = NSRect(x: 0, y: 0, width: 700, height: 600)

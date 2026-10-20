@@ -150,7 +150,7 @@ enum SelfTest {
         var buttons: [NSButton] = []
         func collect(_ v: NSView) { if let b = v as? NSButton { buttons.append(b) }; v.subviews.forEach(collect) }
         collect(ed.formatBar)
-        check(buttons.count == 13, "format bar has 13 buttons: \(buttons.count)")
+        check(buttons.count == 14, "format bar has 14 buttons: \(buttons.count)")
         for b in buttons where b.target is MarkdownTextView {
             fire(b.toolTip ?? "button") { b.performClick(nil) }
         }

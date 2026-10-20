@@ -31,6 +31,7 @@ enum FormatBar {
         ("bold", "Bold  ⌘B", #selector(MarkdownTextView.toggleBold(_:))),
         ("italic", "Italic  ⌘I", #selector(MarkdownTextView.toggleItalic(_:))),
         ("strikethrough", "Strikethrough  ⇧⌘X", #selector(MarkdownTextView.toggleStrike(_:))),
+        ("highlighter", "Highlight  ⇧⌘M", #selector(MarkdownTextView.toggleHighlight(_:))),
         ("chevron.left.forwardslash.chevron.right", "Inline code  ⌃`", #selector(MarkdownTextView.toggleInlineCode(_:))),
         ("link", "Link  ⌘K", #selector(MarkdownTextView.insertLink(_:))),
         ("|", "", #selector(NSObject.description)),
@@ -55,6 +56,9 @@ enum FormatBar {
             guard item.symbol != "|" else { stack.addArrangedSubview(separator()); continue }
             stack.addArrangedSubview(button(item.symbol, item.tip, item.action))
         }
+        // Narrow panes (sidebar + split view) drop tools from the right end instead of overflowing; the menu keeps them all.
+        for (i, v) in stack.arrangedSubviews.enumerated() { stack.setVisibilityPriority(NSStackView.VisibilityPriority(rawValue: 900 - Float(i)), for: v) }
+        stack.setClippingResistancePriority(.defaultLow, for: .horizontal)
         return glass(stack, cornerRadius: 20)
     }
 

@@ -135,6 +135,7 @@ private func buildMenu() -> NSMenu {
         item("Italic", #selector(tv.toggleItalic(_:)), "i"),
         item("Strikethrough", #selector(tv.toggleStrike(_:)), "x", [.command, .shift]),
         item("Inline Code", #selector(tv.toggleInlineCode(_:)), "`", .control),
+        item("Highlight", #selector(tv.toggleHighlight(_:)), "m", [.command, .shift]),
         item("Link", #selector(tv.insertLink(_:)), "k"),
         sep(),
     ] + headings + [

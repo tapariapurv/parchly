@@ -131,7 +131,8 @@ enum MD {
         let removing = !content.isEmpty && content.allSatisfy { has(parse($0)) }
         var n = 0
         return lines.map { line in
-            guard !line.trimmingCharacters(in: .whitespaces).isEmpty else { return line }
+            // Blank lines are skipped, unless they are all there is: then start a fresh list item (Bear does this).
+            guard content.isEmpty || !line.trimmingCharacters(in: .whitespaces).isEmpty else { return line }
             let p = parse(line).flatMap { $0.isQuote ? nil : $0 }
             let indent = p?.indent ?? leadingWhitespace(line)
             let body = (line as NSString).substring(from: p?.length ?? (indent as NSString).length)
