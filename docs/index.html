@@ -72,6 +72,17 @@ header .wrap{display:flex;align-items:center;justify-content:space-between;heigh
 .stage{perspective:1600px;margin-top:44px}
 .shot{display:block;width:100%;height:auto;border-radius:14px;border:1px solid var(--rule);box-shadow:0 34px 80px -36px rgba(40,30,15,.45)}
 .stage .shot{max-width:1040px;margin:0 auto;transform:rotateX(var(--tilt,14deg)) scale(var(--sc,.96));transform-origin:50% 0;will-change:transform}
+.film{position:relative;max-width:1040px;margin:0 auto;aspect-ratio:16/9;border-radius:16px;overflow:hidden;border:1px solid var(--rule);background:#2e3440;box-shadow:0 34px 80px -36px rgba(40,30,15,.45)}
+.film video{display:block;width:100%;height:100%}
+.play{position:absolute;inset:0;display:grid;place-items:center;border:0;padding:0;cursor:pointer;background:linear-gradient(180deg,transparent 50%,rgba(0,0,0,.3));transition:opacity .2s var(--ease-out)}
+.play span{display:flex;align-items:center;gap:12px;padding:12px 22px 12px 12px;border-radius:999px;background:color-mix(in srgb,var(--surface) 80%,transparent);-webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4);color:var(--heading);font:600 16px -apple-system,sans-serif;box-shadow:0 18px 40px -16px rgba(0,0,0,.5),inset 0 0 0 1px rgba(255,255,255,.3);transition:transform .15s var(--ease-out)}
+.play i{width:38px;height:38px;border-radius:50%;background:var(--accent);display:grid;place-items:center}
+.play i::after{content:"";margin-left:3px;border-left:12px solid #fff;border-top:7.5px solid transparent;border-bottom:7.5px solid transparent}
+.play small{font:500 14px -apple-system,sans-serif;color:var(--muted)}
+.play:active span{transform:scale(.97)}
+.play:focus-visible{outline:none}.play:focus-visible span{outline:2px solid var(--accent);outline-offset:3px}
+@media (hover:hover) and (pointer:fine){.play:hover span{transform:scale(1.03)}}
+.film.on .play{opacity:0;pointer-events:none}
 section{padding:84px 0;border-top:1px solid var(--rule)}
 h2{font-size:clamp(28px,4vw,38px);margin:0 0 12px}
 .sub{color:var(--muted);font-size:19px;max-width:680px;margin:0 0 34px}
@@ -147,11 +158,17 @@ footer{padding:40px 0 60px;color:var(--muted);font-size:15px;border-top:1px soli
   <p class="lead">Parchly is a free, native Markdown editor for Mac. Write in a calm document view or use the formatting bar, and every <code>.md</code> file stays plain text on disk.</p>
   <div>
     <div class="cmd"><code>curl -fsSL https://tapariapurv.github.io/parchly/install.sh | bash</code><button class="copy" type="button" aria-label="Copy install command"><span class="c1">Copy</span><span class="c2" aria-hidden="true">Copied ✓</span></button></div>
-    <div class="cta"><a class="btn primary" href="https://github.com/tapariapurv/parchly/releases/latest/download/Parchly.dmg">Download for Mac</a><a class="btn" href="#install">Install guide</a><a class="btn" href="https://github.com/tapariapurv/parchly">GitHub</a></div>
+    <div class="cta"><a class="btn primary" href="https://github.com/tapariapurv/parchly/releases/latest/download/Parchly.dmg">Download for Mac</a><a class="btn" href="#film">Watch the film</a><a class="btn" href="#install">Install guide</a><a class="btn" href="https://github.com/tapariapurv/parchly">GitHub</a></div>
   </div>
   <p style="font:13px -apple-system,sans-serif;color:var(--faint);margin-top:12px">Free &amp; open source · macOS 14+ · Apple silicon &amp; Intel · Updates itself</p>
   <div class="stage"><img class="shot" src="assets/document.jpg" alt="Parchly editing a Markdown note in Document mode with headings, a tip callout, lists and the formatting bar" width="1600" height="1050"></div>
 </div>
+
+<section id="film"><div class="wrap" style="text-align:center">
+  <h2 class="reveal">See it in 37 seconds</h2>
+  <p class="sub reveal" style="margin:0 auto 34px">Typing, the formatting bar, three views, nine themes and Quick Look in one short film. Sound on.</p>
+  <figure class="film reveal"><video src="assets/film.mp4" poster="assets/film-poster.jpg" preload="none" playsinline width="1920" height="1080" aria-label="Parchly product film, 37 seconds"></video><button class="play" type="button" aria-label="Play the 37-second Parchly film with sound"><span><i></i>Play the film <small>0:37</small></span></button></figure>
+</div></section>
 
 <section id="demo"><div class="wrap split">
   <div>
@@ -281,6 +298,10 @@ function onScroll() {
 }
 addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(onScroll); } }, { passive: true });
 onScroll();
+
+const film = document.querySelector('.film'), filmV = film.querySelector('video');
+film.querySelector('.play').addEventListener('click', () => { film.classList.add('on'); filmV.controls = true; filmV.play(); });
+filmV.addEventListener('ended', () => { film.classList.remove('on'); filmV.controls = false; filmV.load(); });
 
 const io = new IntersectionObserver(es => es.forEach(e => {
   if (!e.isIntersecting) return;

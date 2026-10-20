@@ -5,7 +5,7 @@
 A calm, native Markdown editor for macOS: **edit, create, view and Quick Look** `.md` files.
 The look follows [Downright](https://downright.cc). The goal is that every feature just works.
 
-**Website:** https://tapariapurv.github.io/parchly/
+**Website:** https://tapariapurv.github.io/parchly/ · **Film:** [Parchly in 37 seconds](https://tapariapurv.github.io/parchly/#film)
 
 ![Parchly in Document mode](docs/assets/document.jpg)
 
