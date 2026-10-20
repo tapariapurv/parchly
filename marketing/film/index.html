@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=1920, height=1080" />
+<title>Parchly</title>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+<script src="assets/cues.js"></script>
+<script src="assets/motion-kit.js"></script>
+<style>
+  @font-face { font-family: NY; src: url(assets/fonts/NewYork.ttf); font-weight: 100 1000; }
+  @font-face { font-family: NY; src: url(assets/fonts/NewYorkItalic.ttf); font-style: italic; font-weight: 100 1000; }
+  @font-face { font-family: SF; src: url(assets/fonts/SFNS.ttf); font-weight: 100 1000; }
+  @font-face { font-family: SFM; src: url(assets/fonts/SFNSMono.ttf); font-weight: 100 1000; }
+  :root { --serif: NY, Georgia, serif; --sans: SF, -apple-system, sans-serif; --mono: SFM, Menlo, monospace; }
+  body { margin: 0; background: #f7f4ee; }
+  #root { position: relative; width: 1920px; height: 1080px; overflow: hidden; font-family: var(--sans);
+    --fbg: #f7f4ee; --fink: #181513; --fmut: #685f56; --facc: #307afe; background: var(--fbg); color: var(--fink); }
+  .scene { position: absolute; inset: 0; opacity: 0; }
+  .cam { position: absolute; inset: 0; }
+  .h { display: none; }
+  .mask { overflow: hidden; padding: .04em 0 .18em; }
+  .serif { font-family: var(--serif); letter-spacing: -0.02em; }
+  .cap { position: absolute; left: 0; right: 0; top: 40px; text-align: center; font: 600 50px/1.2 var(--serif); letter-spacing: -0.02em; color: var(--fink); opacity: 0; }
+  .caret { display: inline-block; width: 3px; height: 1.05em; background: #307afe; border-radius: 2px; vertical-align: -0.17em; margin-left: 2px; }
+
+  /* 1 · hook */
+  #mline { position: absolute; top: 498px; font: 400 54px var(--mono); color: #292522; white-space: pre; }
+  #hm { color: #9b8b77; display: inline-block; }
+  #sh { position: absolute; left: 0; right: 0; top: 452px; text-align: center; font: 700 96px/1.1 var(--serif); letter-spacing: -0.025em; color: #181513; opacity: 0; }
+  #shi { display: inline-block; }
+  .badge { font: 600 17px var(--sans); color: #8b8178; background: #ebe7e0; border-radius: 7px; padding: 5px 9px; }
+  #hb { position: absolute; opacity: 0; font-size: 26px; padding: 7px 13px; border-radius: 10px; }
+  #he { position: absolute; left: 0; right: 0; top: 600px; text-align: center; font: 500 26px var(--sans); color: #685f56; opacity: 0; }
+
+  /* 2 · app window (theme vars live here) */
+  #win { position: absolute; left: 210px; top: 150px; width: 1500px; height: 880px; border-radius: 22px; overflow: hidden; opacity: 0;
+    --bg: #f7f4ee; --ink: #292522; --heading: #181513; --accent: #307afe; --surface: #fffdfa; --rule: #d9d2c8;
+    background: var(--bg); color: var(--ink); box-shadow: 0 0 0 1px rgba(0,0,0,.08), 0 40px 90px -20px rgba(40,30,20,.35), 0 12px 30px -10px rgba(40,30,20,.2); }
+  #tbar { position: absolute; left: 0; right: 0; top: 0; height: 64px; background: var(--surface); border-bottom: 1px solid var(--rule); }
+  .lights { position: absolute; left: 24px; top: 25px; display: flex; gap: 9px; }
+  .lights i { width: 14px; height: 14px; border-radius: 50%; background: #ff5f57; }
+  .lights i:nth-child(2) { background: #febc2e; } .lights i:nth-child(3) { background: #28c840; }
+  .wtitle { position: absolute; left: 112px; top: 20px; font: 600 18px var(--sans); color: var(--ink); opacity: .7; }
+  #seg { position: absolute; left: 50%; top: 11px; transform: translateX(-50%); height: 42px; display: flex; align-items: center; gap: 6px; padding: 0 8px;
+    border-radius: 21px; border: 1px solid var(--rule); background: var(--bg); font: 600 17px var(--sans); }
+  #seg span { position: relative; padding: 0 22px; color: var(--ink); opacity: .45; }
+  #seg span.on { opacity: 1; }
+  #tabind { position: absolute; left: 0; top: 34px; height: 2.5px; background: var(--accent); border-radius: 2px; transform-origin: 0 0; }
+  .tools { position: absolute; right: 22px; top: 11px; height: 42px; display: flex; align-items: center; gap: 22px; padding: 0 18px;
+    border-radius: 21px; border: 1px solid var(--rule); color: var(--ink); opacity: .7; font: 500 19px var(--sans); }
+  .tools svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+  #page { position: absolute; left: 0; right: 0; top: 65px; bottom: 0; }
+  .view { position: absolute; inset: 0; }
+  #docv .col { position: absolute; left: 320px; top: 70px; width: 860px; font: 400 27px/1.7 var(--serif); }
+  .h1 { position: relative; font: 700 60px/1.15 var(--serif); letter-spacing: -0.02em; color: var(--heading); margin-bottom: 22px; }
+  .h1 .badge, .h2 .badge { position: absolute; left: -64px; top: 50%; transform: translateY(-50%); background: color-mix(in srgb, var(--rule) 55%, transparent); color: var(--ink); opacity: .7; }
+  .h2 { position: relative; font: 700 38px/1.2 var(--serif); color: var(--heading); margin: 44px 0 14px; }
+  .mk { color: color-mix(in srgb, var(--ink) 42%, transparent); display: inline-block; overflow: hidden; vertical-align: bottom; white-space: pre; max-width: 40px; }
+  b { font-weight: 700; color: var(--heading); }
+  #wp { position: relative; display: inline-block; isolation: isolate; }
+  #selbg { position: absolute; left: -3px; right: -3px; top: 6px; bottom: 4px; border-radius: 4px; background: color-mix(in srgb, var(--accent) 28%, transparent); z-index: -1; transform: scaleX(0); transform-origin: 0 50%; }
+  #wpi { position: relative; }
+  .task { display: flex; align-items: center; gap: 14px; position: relative; }
+  #cb { width: 24px; height: 24px; box-sizing: border-box; border: 2px solid color-mix(in srgb, var(--ink) 45%, transparent); border-radius: 7px; position: relative; flex: none; }
+  #cbf { position: absolute; inset: -2px; border-radius: 7px; background: var(--accent); opacity: 0; }
+  #cbf svg { width: 100%; height: 100%; }
+  #l2w { position: relative; display: inline-block; }
+  #strike { position: absolute; left: 0; right: 0; top: 54%; height: 2px; background: currentColor; transform: scaleX(0); transform-origin: 0 50%; }
+  #status { position: absolute; right: 22px; bottom: 18px; font: 500 15px var(--sans); color: var(--ink); opacity: .55; border: 1px solid var(--rule); border-radius: 10px; padding: 4px 10px; }
+  #fbar { position: absolute; left: 50%; bottom: 26px; margin-left: -330px; width: 660px; height: 56px; border-radius: 28px; display: flex; align-items: center; justify-content: space-evenly;
+    background: color-mix(in srgb, var(--surface) 82%, transparent); border: 1px solid var(--rule); box-shadow: 0 10px 30px -8px rgba(0,0,0,.25); opacity: 0;
+    font: 600 20px var(--sans); color: var(--ink); }
+  #fbar > span { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; }
+  #fbar svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+  #fbar .sep { width: 1px; height: 22px; background: var(--rule); border-radius: 0; }
+  #fbB.act { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); }
+  #tip { position: absolute; font: 600 17px var(--sans); color: #fff; background: rgba(28,24,20,.9); border-radius: 9px; padding: 7px 12px; opacity: 0; white-space: nowrap; }
+  #tip i { font-style: normal; opacity: .6; margin-left: 8px; }
+  /* source + split */
+  .src { font: 400 22px/1.75 var(--mono); white-space: pre; }
+  .src .ln { display: inline-block; width: 48px; text-align: right; margin-right: 26px; color: var(--ink); opacity: .3; }
+  .src .mk { max-width: none; overflow: visible; }
+  .src .hd { color: var(--heading); font-weight: 700; }
+  #srcv { opacity: 0; } #srcv .src { position: absolute; left: 240px; top: 54px; }
+  #splv { opacity: 0; }
+  #spl-l { position: absolute; left: 0; top: 0; bottom: 0; width: 740px; border-right: 1px solid var(--rule); }
+  #spl-l .src { position: absolute; left: 10px; top: 40px; font-size: 18px; }
+  #prev { position: absolute; left: 741px; right: 0; top: 0; bottom: 0; padding: 40px 60px; box-sizing: border-box; font: 400 19px/1.6 var(--sans); background: var(--surface); }
+  #prev h1 { font: 700 36px/1.2 var(--sans); color: var(--heading); margin: 0 0 14px; padding-bottom: 10px; border-bottom: 1px solid var(--rule); }
+  #prev h2 { font: 700 26px var(--sans); color: var(--heading); margin: 20px 0 8px; }
+  #prev p { margin: 0 0 10px; }
+  .pchk { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 4px; background: var(--accent); vertical-align: -3px; margin-right: 10px; }
+  #pmath { text-align: center; font: italic 400 38px var(--serif); color: var(--heading); margin: 22px 0 18px; }
+  #pmath sup { font-size: .55em; }
+  #pdia { display: block; margin: 0 auto; }
+  /* themes panel */
+  #thp { position: absolute; left: 1250px; top: 360px; width: 620px; opacity: 0; }
+  #thp .lbl { font: 600 22px var(--sans); color: var(--fmut); letter-spacing: .02em; }
+  #thn { position: relative; height: 110px; margin-top: 8px; }
+  #thn .mask { position: absolute; left: 0; top: 0; }
+  #thn .nm { font: 700 76px/1.15 var(--serif); letter-spacing: -0.025em; color: var(--fink); }
+  #dots { display: flex; gap: 14px; margin-top: 26px; }
+  #dots i { width: 26px; height: 26px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px rgba(127,127,127,.35); }
+  #dots i b { display: block; width: 10px; height: 10px; border-radius: 50%; margin: 8px; }
+  #keys { position: absolute; left: 50%; top: 420px; margin-left: -150px; width: 300px; height: 190px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 18px; opacity: 0; border-radius: 34px; background: rgba(255,253,250,.82); backdrop-filter: blur(24px); box-shadow: 0 0 0 1px rgba(0,0,0,.06), 0 30px 70px -20px rgba(40,30,20,.45); }
+  #keys .key { min-width: 104px; height: 104px; font-size: 46px; }
+  .key { min-width: 76px; height: 76px; padding: 0 20px; box-sizing: border-box; border-radius: 16px; background: #fffdfa; border: 1px solid #d9d2c8; box-shadow: 0 5px 0 #d9d2c8, 0 14px 24px -10px rgba(0,0,0,.3);
+    display: grid; place-items: center; font: 500 34px var(--sans); color: #292522; }
+  #pill { position: absolute; left: 50%; top: 940px; transform: translateX(-50%); font: 600 30px var(--serif); color: #181513; background: #fffdfa; border: 1px solid #d9d2c8;
+    border-radius: 40px; padding: 18px 34px; box-shadow: 0 18px 40px -16px rgba(40,30,20,.4); opacity: 0; white-space: nowrap; }
+
+  /* 3 · quick look */
+  #fw { position: absolute; left: 470px; top: 290px; width: 980px; height: 520px; border-radius: 18px; background: #fffdfa; overflow: hidden;
+    box-shadow: 0 0 0 1px rgba(0,0,0,.08), 0 40px 90px -20px rgba(40,30,20,.3); }
+  #fw .tb { height: 58px; border-bottom: 1px solid #e6e0d6; background: #f3efe8; position: relative; }
+  #fw .tb .lights { top: 22px; }
+  #fw .tb b { position: absolute; left: 112px; top: 17px; font: 600 19px var(--sans); color: #292522; }
+  #files { display: flex; gap: 46px; padding: 70px 0 0 70px; }
+  .file { width: 132px; text-align: center; font: 500 16px/1.3 var(--sans); color: #292522; }
+  .ficon { width: 116px; height: 136px; margin: 0 auto 12px; border-radius: 12px; display: grid; place-items: center; }
+  .ficon svg { width: 86px; height: 110px; filter: drop-shadow(0 4px 6px rgba(0,0,0,.15)); }
+  .file .fn { display: inline-block; padding: 3px 9px; border-radius: 7px; }
+  #f0.sel .ficon { background: rgba(0,0,0,.07); }
+  #f0.sel .fn { background: #2463d6; color: #fff; }
+  #ql { position: absolute; left: 400px; top: 160px; width: 1120px; height: 720px; border-radius: 20px; background: #f7f4ee; overflow: hidden; opacity: 0;
+    box-shadow: 0 0 0 1px rgba(0,0,0,.1), 0 50px 110px -20px rgba(30,20,10,.45); }
+  #ql .tb { height: 60px; background: rgba(255,253,250,.9); border-bottom: 1px solid #e6e0d6; position: relative; font: 600 19px var(--sans); color: #292522; }
+  #ql .tb .t { position: absolute; left: 0; right: 0; top: 18px; text-align: center; }
+  #ql .tb .open { position: absolute; right: 18px; top: 12px; padding: 7px 16px; border-radius: 10px; border: 1px solid #d9d2c8; font-size: 16px; background: #fffdfa; }
+  #ql .col { position: absolute; left: 190px; top: 108px; width: 740px; font: 400 23px/1.65 var(--serif); color: #292522; }
+  #ql .h1 { font-size: 50px; } #ql .h2 { font-size: 32px; margin: 30px 0 10px; }
+  #ql table { border-collapse: collapse; font: 400 19px var(--sans); margin-top: 22px; width: 100%; }
+  #ql td, #ql th { border: 1px solid #d9d2c8; padding: 8px 14px; text-align: left; }
+  #ql th { background: #efebe4; font-weight: 600; }
+
+  /* 4 · plain files */
+  #s4 .stack { position: absolute; left: 0; right: 0; top: 270px; text-align: center; }
+  #s4 .ln4 { font: 700 112px/1.1 var(--serif); letter-spacing: -0.03em; color: #181513; }
+  #p4 { font: 400 40px var(--mono); color: #685f56; margin-top: 40px; opacity: 0; }
+  #p4 span { color: #307afe; }
+
+  /* 5 · end */
+  #s5 .wrap { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  #lock { display: flex; align-items: center; gap: 34px; }
+  #icon { width: 230px; height: 230px; }
+  #word { font: 700 168px/1 var(--serif); letter-spacing: -0.035em; color: #181513; clip-path: inset(-20% 100% -20% 0); }
+  #ek { width: 9px; height: 150px; border-radius: 5px; background: #307afe; margin-left: -18px; opacity: 0; }
+  #tag { font: italic 400 46px var(--serif); color: #292522; margin-top: 46px; opacity: 0; }
+  #cta { font: 500 24px var(--sans); color: #685f56; margin-top: 26px; opacity: 0; }
+  #cursor { position: absolute; left: 0; top: 0; width: 36px; opacity: 0; z-index: 10; filter: drop-shadow(0 3px 5px rgba(0,0,0,.25)); }
+</style>
+</head>
+<body>
+<div id="root" data-composition-id="main" data-start="0" data-width="1920" data-height="1080" data-duration="37">
+  <audio id="score" src="assets/score.m4a" data-start="0" data-duration="37" data-track-index="2" data-volume="1"></audio>
+
+  <!-- 1 · hook: raw Markdown melts into a page -->
+  <section id="s1" class="scene"><div id="s1w" class="cam">
+    <div id="mline"><span id="hm"></span><span id="mt"></span><span class="caret" id="hk"></span></div>
+    <div id="sh"><span id="shi">Markdown that reads like a page.</span></div>
+    <span class="badge" id="hb">H1</span>
+    <div id="he">Parchly · a calm, native Markdown editor for Mac</div>
+  </div></section>
+
+  <!-- 2 · the app -->
+  <section id="s2" class="scene">
+    <div class="cam" id="cam">
+      <div id="win">
+        <div id="tbar">
+          <div class="lights"><i></i><i></i><i></i></div>
+          <div class="wtitle">Launch Plan.md</div>
+          <div id="seg"><span id="tDoc" class="on">Document</span><span id="tSrc">Source</span><div id="tabind"></div></div>
+          <div class="tools">Aa
+            <svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg>
+            <svg viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="3"/><path d="M12 4.5v15"/></svg>
+            <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r=".6"/><circle cx="12" cy="12" r=".6"/><circle cx="19" cy="12" r=".6"/></svg></div>
+        </div>
+        <div id="page">
+          <div class="view" id="docv"><div class="col">
+            <div class="h1"><span class="badge">H1</span>Launch Plan</div>
+            <div>Every note is a <span id="wp"><span id="selbg"></span><span id="wpi">plain</span></span> Markdown file, so it opens anywhere and reads like a finished page.</div>
+            <div class="h2"><span class="badge">H2</span>This week</div>
+            <div id="l1"><span id="l1a"></span><span class="mk" id="m1"></span><b id="l1b"></b><span class="mk" id="m2"></span><span id="l1c"></span><span class="caret" id="k1" style="opacity:0"></span></div>
+            <div class="task" id="l2"><span id="l2r"></span><span class="h" id="cb" data-show="inline-block"><span id="cbf"><svg viewBox="0 0 24 24"><path d="M6.5 12.5l3.6 3.6 7.4-8" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></span><span id="l2w"><span id="l2t"></span><span id="strike"></span></span><span class="caret" id="k2" style="opacity:0;margin-left:-12px"></span></div>
+          </div></div>
+          <div class="view" id="srcv"><div class="src" id="srcA"></div></div>
+          <div class="view" id="splv">
+            <div id="spl-l"><div class="src" id="srcB"></div></div>
+            <div id="prev">
+              <h1>Launch Plan</h1>
+              <p>Every note is a <b>plain</b> Markdown file, so it opens anywhere and reads like a page.</p>
+              <h2>This week</h2>
+              <p><span class="pchk"><svg width="13" height="13" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Ship it on Friday</p>
+              <div id="pfocus">
+                <div id="pmath">e<sup>iπ</sup> + 1 = 0</div>
+                <svg id="pdia" width="560" height="96" viewBox="0 0 560 96" font-family="SF, sans-serif" font-size="19" font-weight="600" text-anchor="middle">
+                  <g fill="color-mix(in srgb, var(--accent) 10%, var(--surface))" stroke="var(--accent)" stroke-width="1.8">
+                    <rect x="4" y="22" width="132" height="52" rx="12"/><rect x="214" y="22" width="132" height="52" rx="12"/><rect x="424" y="22" width="132" height="52" rx="12"/></g>
+                  <g stroke="var(--ink)" stroke-width="1.8" fill="none" opacity=".55"><path d="M142 48h62M196 41l8 7-8 7M352 48h62M406 41l8 7-8 7"/></g>
+                  <g fill="var(--heading)"><text x="70" y="55">Draft</text><text x="280" y="55">Review</text><text x="490" y="55">Ship</text></g>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="fbar">
+          <span>Aa</span><span class="sep"></span>
+          <span id="fbB" style="font-weight:800">B</span><span style="font:italic 600 21px var(--serif)">I</span><span style="text-decoration:line-through">S</span><span style="font-size:16px">&lt;/&gt;</span>
+          <span><svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg></span><span class="sep"></span>
+          <span><svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.1M4.5 12h.1M4.5 18h.1" stroke-width="2.2"/></svg></span>
+          <span><svg viewBox="0 0 24 24"><rect x="3" y="4" width="6" height="6" rx="1.5"/><path d="M4.5 7l1.2 1.2L8 5.8M12 7h9M3.5 17h5M12 17h9"/></svg></span>
+          <span><svg viewBox="0 0 24 24"><path d="M5 5v14M10 7h10M10 12h10M10 17h7"/></svg></span><span class="sep"></span>
+          <span style="font-size:19px">{ }</span>
+          <span><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M3 14.5h18M9.5 5v14"/></svg></span>
+          <span>—</span>
+        </div>
+        <div id="status">42 words · Ln 8</div>
+      </div>
+    </div>
+    <div id="tip">Bold<i>⌘B</i></div>
+    <div class="cap" id="c2">No syntax required.</div>
+    <div class="cap" id="c3">Document, Source and Preview.</div>
+    <div class="cap" id="c4">Nine themes, one calm page.</div>
+    <div id="pill">Syntax hides the moment you move on.</div>
+    <div id="keys"><div class="key" id="kc">⌘</div><div class="key" id="kb">\</div></div>
+    <div id="thp"><div class="lbl" id="thc">THEME 01 / 09</div><div id="thn" data-layout-allow-overflow></div><div id="dots"></div></div>
+  </section>
+
+  <!-- 3 · Quick Look -->
+  <section id="s3" class="scene">
+    <div class="cap" id="c5">Press Space in Finder.</div>
+    <div id="fw" data-layout-allow-overlap><div class="tb"><div class="lights"><i></i><i></i><i></i></div><b>Notes</b></div><div id="files"></div></div>
+    <div id="keys2" style="position:absolute;left:0;right:0;top:930px;display:flex;justify-content:center;opacity:0"><div class="key" id="ksp" style="width:340px;font-size:24px;color:#685f56">space</div></div>
+    <div id="ql" data-layout-allow-overlap><div class="tb"><div class="lights" style="top:23px"><i></i><i></i><i></i></div><div class="t">Launch Plan.md</div><div class="open">Open with Parchly</div></div>
+      <div class="col">
+        <div class="h1">Launch Plan</div>
+        <div>Every note is a <b>plain</b> Markdown file, so it opens anywhere and reads like a finished page.</div>
+        <div class="h2">This week</div>
+        <table><tr><th>Task</th><th>Owner</th><th>Status</th></tr><tr><td>Ship it on Friday</td><td>You</td><td>Done</td></tr><tr><td>Write the changelog</td><td>Team</td><td>Today</td></tr></table>
+      </div></div>
+  </section>
+
+  <!-- 4 · plain files -->
+  <section id="s4" class="scene"><div class="stack">
+    <div class="mask"><div class="ln4">No library.</div></div>
+    <div class="mask"><div class="ln4">No database.</div></div>
+    <div class="mask"><div class="ln4">No account.</div></div>
+    <div id="p4">Just plain <span>.md</span> files.</div>
+  </div></section>
+
+  <!-- 5 · end card -->
+  <section id="s5" class="scene"><div class="wrap" id="s5w">
+    <div id="lock"><img id="icon" src="assets/icon.png" alt="" /><div id="word">Parchly</div><div id="ek"></div></div>
+    <div id="tag">Markdown that reads like a page.</div>
+    <div id="cta">Free &amp; open source · macOS 14+ · tapariapurv.github.io/parchly</div>
+  </div></section>
+
+  <svg id="cursor" viewBox="0 0 24 24"><path d="M4 2.5v17.2l4.6-4.4 2.9 6.6 2.6-1.1-2.8-6.5h6.4z" fill="#141413" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg>
+</div>
+<script>
+document.fonts.ready.then(() => {
+  const C = window.CUES, S = C.scene, T = C.type, tl = gsap.timeline({ paused: true }), K = MotionKit(tl), $ = K.$;
+
+  // ---- generated content (before measuring) ----
+  const mk = (s) => `<i class="mk" style="font-style:normal">${s}</i>`;
+  const SRC = [mk("# ") + '<span class="hd">Launch Plan</span>', "", `Every note is a ${mk("**")}plain${mk("**")} Markdown file,`, "so it opens anywhere and reads like a page.", "",
+    mk("## ") + '<span class="hd">This week</span>', `The page stays ${mk("**")}calm${mk("**")} while you write.`, `${mk("- [x]")} Ship it on Friday`, "",
+    `${mk("$$")} e^{i\\pi} + 1 = 0 ${mk("$$")}`, "", mk("```mermaid"), "graph LR; Draft --> Review --> Ship", mk("```")];
+  const srcHTML = (n) => SRC.slice(0, n).map((l, i) => `<span class="ln">${i + 1}</span>${l}`).join("\n");
+  $("#srcA").innerHTML = srcHTML(8); $("#srcB").innerHTML = srcHTML(14);
+  const TH = [["Paper", "#f7f4ee", "#307afe", "#292522", "#fffdfa", "#d9d2c8", "#181513"], ["Warm Dark", "#171614", "#6ea8ff", "#e3ddd5", "#24211e", "#3d3832", "#f4eee5"],
+    ["Nord", "#2e3440", "#88c0d0", "#d8dee9", "#3b4252", "#434c5e", "#eceff4"], ["Solarized Light", "#fdf6e3", "#268bd2", "#526b72", "#eee8d5", "#e3dcc6", "#586e75"],
+    ["High Contrast", "#ffffff", "#0000cc", "#000000", "#f2f2f2", "#cccccc", "#000000"], ["Sepia", "#f3e9d7", "#b4652b", "#3f3226", "#faf3e6", "#dbc9ab", "#2c2118"],
+    ["Solarized Dark", "#002b36", "#268bd2", "#93a1a1", "#073642", "#0f4a57", "#eee8d5"], ["Forest", "#151c18", "#7cc48b", "#d6dfd5", "#1e2722", "#2f3b33", "#eef4ea"],
+    ["Midnight", "#10131c", "#8b9cff", "#d7dcea", "#181d2a", "#2a3145", "#f1f3fa"]];
+  $("#thn").innerHTML = TH.map((t, i) => `<div class="mask"><div class="nm" id="nm${i}">${t[0]}</div></div>`).join("");
+  $("#dots").innerHTML = TH.map((t, i) => `<i id="d${i}" style="background:${t[1]}"><b style="background:${t[2]}"></b></i>`).join("");
+  const doc = '<svg viewBox="0 0 86 110"><path d="M4 4h56l22 22v80H4z" fill="#fffdfa" stroke="#d9d2c8" stroke-width="1.5"/><path d="M60 4v22h22" fill="#ece5d9"/><path d="M16 46h50M16 58h50M16 70h34" stroke="#cdbb9f" stroke-width="4" stroke-linecap="round"/><text x="43" y="94" text-anchor="middle" font-family="SF" font-weight="700" font-size="13" fill="#a85c25">MD</text></svg>';
+  $("#files").innerHTML = ["Launch Plan.md", "Reading List.md", "Ideas.md", "README.md", "Journal.md"].map((n, i) => `<div class="file" id="f${i}"><div class="ficon">${doc}</div><span class="fn">${n}</span></div>`).join("");
+
+  gsap.set(".nm", { yPercent: 105 });
+  // ---- measure first ----
+  const typeSegs = (segs, spec) => spec.times.forEach((t, i) => { let n = i + 1;
+    segs.forEach(([q, s]) => { const k = Math.min(n, s.length); n -= k; tl.set(q, { textContent: s.slice(0, k) }, t); }); });
+  // hook: centre the finished mono line, then clear it
+  $("#hm").textContent = "# "; $("#mt").textContent = T.hook.text.slice(2);
+  const ML = K.box("#mline"); $("#mline").style.left = (960 - ML.w / 2) + "px";
+  const HM = K.box("#hm"), SH = K.box("#shi");
+  $("#hm").textContent = $("#mt").textContent = "";
+  K.placeLabel("#hb", SH.x - 84, (h) => SH.cy - h / 2 + 4);
+  const HB = K.box("#hb");
+  // app
+  const L1 = K.box("#l1"), CB = K.withShown(["#cb"], () => K.box("#cb")), WP = K.box("#wp"), FB = K.box("#fbB");
+  const TD = K.box("#tDoc"), TS = K.box("#tSrc"), PF = K.box("#pfocus"), SEG = K.box("#seg");
+  gsap.set("#tabind", { x: TD.x - SEG.x + 22, scaleX: TD.w - 44 });
+  $("#tabind").style.width = "1px";
+  K.placeLabel("#tip", (w) => FB.cx - w / 2, (h) => FB.y - h - 14);
+  const F0 = K.box("#f0 .ficon"), QL = K.box("#ql");
+  const PUSH = K.camV(L1.x, L1.cy, 1.7, 330, 520), PUNCH = K.camV(PF.cx, PF.cy, 1.5), THC = K.camV(960, 590, .68, 640, 590);
+  const scr = (x, y, c) => [960 + c.x + (x - 960) * c.scale - 5, 540 + c.y + (y - 540) * c.scale - 3];
+  const ID = { scale: 1, x: 0, y: 0 };
+
+  // ---- 1 · hook ----
+  tl.set("#s1", { opacity: 1 }, 0);
+  K.blink("#hk", 0, T.hook.times[0]);
+  typeSegs([["#hm", "# "], ["#mt", T.hook.text.slice(2)]], T.hook);
+  K.blink("#hk", 2.5, S.melt);
+  tl.to("#hk", { opacity: 0, duration: .15 }, S.melt);
+  tl.to("#mt", { opacity: 0, filter: "blur(10px)", y: -8, duration: .45, ease: "power2.in" }, S.melt);
+  tl.to("#hm", { x: HB.cx - HM.cx, y: HB.cy - HM.cy, scale: .55, opacity: 0, duration: .55, ease: "expo.inOut" }, S.melt);
+  tl.fromTo("#sh", { opacity: 0, filter: "blur(14px)", scale: 1.05 }, { opacity: 1, filter: "blur(0px)", scale: 1, duration: .9, ease: "expo.out" }, S.melt + .15);
+  tl.fromTo("#hb", { opacity: 0, scale: .6 }, { opacity: 1, scale: 1, duration: .5, ease: "expo.out" }, S.melt + .4);
+  K.rise("#he", S.melt + .75, 16, .6);
+  K.drift("#s1w", 0, S.doc, 1.035);
+  K.sceneOut("#s1", S.doc);
+
+  // ---- 2 · document mode: type, markers hide, task list ----
+  tl.set("#s2", { opacity: 1 }, S.doc);
+  tl.fromTo("#win", { opacity: 0, y: 90, scale: .94 }, { opacity: 1, y: 0, scale: 1, duration: .9, ease: "expo.out" }, S.doc);
+  tl.to("#cam", { ...PUSH, duration: .75, ease: "expo.inOut" }, S.push);
+  tl.set("#k1", { opacity: 1 }, S.push);
+  K.blink("#k1", S.push + .25, T.l1.times[0]);
+  typeSegs([["#l1a", "The page stays "], ["#m1", "**"], ["#l1b", "calm"], ["#m2", "**"], ["#l1c", " while you write."]], T.l1);
+  K.blink("#k1", 8.6, C.ret);
+  tl.set("#k1", { opacity: 0 }, C.ret).set("#k2", { opacity: 1 }, C.ret);
+  tl.to("#m1, #m2", { opacity: 0, maxWidth: 0, duration: .4, ease: "power3.inOut" }, C.ret);
+  typeSegs([["#l2r", "[]"]], T.l2a);
+  tl.set("#l2r", { display: "none" }, C.space);
+  tl.set("#cb", { display: "inline-block" }, C.space);
+  tl.fromTo("#cb", { scale: .4, opacity: 0 }, { scale: 1, opacity: 1, duration: .4, ease: "expo.out" }, C.space);
+  typeSegs([["#l2t", "Ship it on Friday"]], T.l2b);
+  K.blink("#k2", 10.9, S.bar);
+  K.rise("#pill", C.ret + .25, 20, .5);
+  tl.to("#pill", { opacity: 0, y: 12, duration: .3, ease: "power2.in" }, S.bar - .3);
+  const cbS = scr(CB.cx, CB.cy, PUSH);
+  K.cursorEnter(cbS[0] + 260, cbS[1] + 170, 10.85);
+  K.cursorTo(cbS[0], cbS[1], 10.95, .5);
+  K.press("#cb", C.check);
+  tl.to("#cbf", { opacity: 1, duration: .2 }, C.check);
+  tl.to("#l2w", { opacity: .45, duration: .3 }, C.check);
+  tl.to("#strike", { scaleX: 1, duration: .4, ease: "power3.inOut" }, C.check + .05);
+
+  // ---- formatting bar: select a word, press B ----
+  K.wide("#cam", S.bar, .8);
+  tl.set("#k2", { opacity: 0 }, S.bar);
+  K.rise("#c2", S.bar + .35, 18, .55);
+  K.rise("#fbar", 12.5, 30, .6);
+  K.cursorTo(WP.x - 5, WP.cy - 3, 12.95, .55);
+  tl.to("#cursor", { x: WP.r - 5, duration: .45, ease: "power1.inOut" }, C.sel);
+  tl.to("#cursor", { scale: .85, duration: .08 }, C.sel).to("#cursor", { scale: 1, duration: .08 }, C.sel + .45);
+  tl.to("#selbg", { scaleX: 1, duration: .45, ease: "power1.inOut" }, C.sel);
+  K.cursorTo(FB.cx - 5, FB.cy - 3, 14.0, .45);
+  K.fadeIn("#tip", 14.2, .2);
+  K.press("#fbB", C.bold);
+  tl.set("#wpi", { fontWeight: 700, color: "var(--heading)" }, C.bold).set("#fbB", { className: "act" }, C.bold);
+  K.fadeOut("#tip", 15.2, .2);
+  tl.to("#selbg", { opacity: 0, duration: .3 }, 15.4);
+  K.fadeOut("#c2", S.modes - .3, .3);
+
+  // ---- three views ----
+  K.rise("#c3", S.modes, 18, .55);
+  K.cursorTo(TS.cx - 5, TS.cy - 3, S.modes - .1, .55);
+  K.press("#tSrc", C.source);
+  tl.to("#tabind", { x: TS.x - SEG.x + 22, scaleX: TS.w - 44, duration: .45, ease: "expo.inOut" }, C.source);
+  tl.set("#tDoc", { className: "" }, C.source).set("#tSrc", { className: "on" }, C.source);
+  tl.to("#docv", { opacity: 0, filter: "blur(6px)", duration: .3 }, C.source);
+  tl.fromTo("#srcv", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: .45, ease: "power2.out" }, C.source + .1);
+  tl.to("#cursor", { opacity: 0, duration: .25 }, 17.2);
+  K.rise("#keys", 17.4, 20, .4);
+  K.press("#kc", C.keys); K.press("#kb", C.keys + .06);
+  tl.to("#keys", { opacity: 0, y: 14, duration: .3, ease: "power2.in" }, 18.5);
+  tl.to("#srcv", { opacity: 0, duration: .25 }, S.split);
+  tl.fromTo("#splv", { opacity: 0 }, { opacity: 1, duration: .3 }, S.split);
+  tl.fromTo("#prev", { x: 120 }, { x: 0, duration: .7, ease: "expo.out" }, S.split);
+  tl.to("#cam", { ...PUNCH, duration: .8, ease: "expo.inOut" }, S.punch);
+  K.fadeOut("#c3", S.punch, .3);
+  tl.to("#cursor", { opacity: 0, duration: 0 }, S.punch);
+
+  // ---- nine themes, one per beat ----
+  tl.to("#cam", { ...THC, duration: .85, ease: "expo.inOut" }, S.themes - .5);
+  tl.to("#splv", { opacity: 0, duration: .3 }, S.themes - .4);
+  tl.to("#docv", { opacity: 1, filter: "blur(0px)", duration: .4 }, S.themes - .3);
+  tl.to("#tabind", { x: TD.x - SEG.x + 22, scaleX: TD.w - 44, duration: .4, ease: "expo.inOut" }, S.themes - .3);
+  tl.set("#tSrc", { className: "" }, S.themes - .3).set("#tDoc", { className: "on" }, S.themes - .3);
+  tl.to("#fbB", { className: "", duration: 0 }, S.themes);
+  K.rise("#c4", S.themes + .1, 18, .55);
+  K.rise("#thp", S.themes + .15, 24, .6);
+  C.themes.forEach((t, i) => { const [, bg, acc, ink, sur, rule, hd] = TH[i];
+    tl.to("#win", { "--bg": bg, "--accent": acc, "--ink": ink, "--surface": sur, "--rule": rule, "--heading": hd, duration: .3, ease: "power2.out" }, t);
+    tl.to("#root", { "--fbg": sur, "--fink": hd, "--fmut": ink, "--facc": acc, duration: .3, ease: "power2.out" }, t);
+    tl.to(`#nm${i}`, { yPercent: 0, y: 0, duration: .45, ease: "expo.out" }, t);
+    if (i < 8) tl.to(`#nm${i}`, { yPercent: -105, duration: .2, ease: "power3.in" }, C.themes[i + 1] - .2);
+    tl.set("#thc", { textContent: `THEME 0${i + 1} / 09` }, t);
+    tl.fromTo(`#d${i}`, { scale: 1 }, { scale: 1.3, duration: .3, ease: "expo.out" }, t);
+    if (i) tl.to(`#d${i - 1}`, { scale: 1, duration: .25 }, t);
+  });
+  K.sceneOut("#s2", S.ql);
+  tl.to("#root", { "--fbg": "#f7f4ee", "--fink": "#181513", "--fmut": "#685f56", duration: .28 }, S.ql - .28);
+
+  // ---- 3 · Quick Look ----
+  K.sceneIn("#s3", S.ql);
+  K.rise("#c5", S.ql + .3, 18, .55);
+  K.cursorEnter(1180, 760, S.ql + .1);
+  K.cursorTo(F0.cx - 5, F0.cy - 3, S.ql + .15, .45);
+  K.press("#f0 .ficon", C.select);
+  tl.set("#f0", { className: "file sel" }, C.select);
+  tl.to("#cursor", { opacity: 0, duration: .25 }, 26.5);
+  K.rise("#keys2", 26.4, 20, .4);
+  K.press("#ksp", C.qlkey);
+  tl.to("#keys2", { opacity: 0, y: 14, duration: .3, ease: "power2.in" }, 27.6);
+  tl.fromTo("#ql", { opacity: 0, scale: .12, x: F0.cx - (QL.x + QL.w / 2), y: F0.cy - (QL.y + QL.h / 2) },
+    { opacity: 1, scale: 1, x: 0, y: 0, duration: .7, ease: "expo.out" }, C.qlkey);
+  tl.to("#fw", { opacity: .35, scale: .97, duration: .6 }, C.qlkey);
+  tl.to("#ql", { scale: 1.02, duration: S.plain - C.qlkey - .7, ease: "none" }, C.qlkey + .7);
+  K.sceneOut("#s3", S.plain);
+
+  // ---- 4 · plain files ----
+  tl.set("#s4", { opacity: 1 }, S.plain);
+  gsap.utils.toArray(".ln4").forEach((el, i) => K.maskIn(el, C.plain[i], .7));
+  K.rise("#p4", C.plain[3], 16, .5);
+  K.sceneOut("#s4", S.logo);
+
+  // ---- 5 · end card ----
+  tl.set("#s5", { opacity: 1 }, S.logo);
+  tl.fromTo("#icon", { opacity: 0, scale: .55, filter: "blur(12px)", rotation: -8 }, { opacity: 1, scale: 1, filter: "blur(0px)", rotation: 0, duration: 1.1, ease: "expo.out" }, S.logo);
+  tl.to("#word", { clipPath: "inset(-20% 0% -20% 0)", duration: .9, ease: "power3.inOut" }, S.logo + .3);
+  tl.fromTo("#word", { x: -30 }, { x: 0, duration: 1.1, ease: "expo.out" }, S.logo + .3);
+  tl.set("#ek", { opacity: 1 }, S.logo + 1.2);
+  K.blink("#ek", S.logo + 1.2, C.DUR);
+  K.rise("#tag", S.logo + 1.1, 16, .7);
+  K.rise("#cta", S.logo + 1.6, 12, .6);
+  tl.fromTo("#s5w", { scale: .97 }, { scale: 1, duration: C.DUR - S.logo, ease: "power1.out" }, S.logo);
+
+  window.__timelines["main"] = tl;
+});
+</script>
+</body>
+</html>

@@ -6,3 +6,8 @@ App/Info.plist
 QuickLook/Info.plist
 QuickLook/*.entitlements
 App/*.entitlements
+# product film: generated audio, Apple system fonts (not redistributable), renders
+marketing/film/assets/score.m4a
+marketing/film/assets/fonts/
+marketing/film/renders/
+marketing/film/.hyperframes/
